@@ -119,7 +119,7 @@ CREATE TABLE User_Interests (
 CREATE TABLE User_Links (
     user_link_id SERIAL    PRIMARY KEY,
     user_id      INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
-    link         VARCHAR   NOT NULL
+    link         VARCHAR   NOT NULL,
     name_        VARCHAR   NOT NULL
 );
 

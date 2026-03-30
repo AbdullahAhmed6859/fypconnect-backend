@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auth_logs {
+  log_id          Int      @id @default(autoincrement())
+  user_id         Int?
+  email_attempted String   @db.VarChar
+  success         Boolean
+  timestamp       DateTime @default(now()) @db.Timestamptz(6)
+  users           users?   @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+}
+
+model blocked_users {
+  block_id                              Int   @id @default(autoincrement())
+  blocker_id                            Int
+  blocked_id                            Int
+  users_blocked_users_blocked_idTousers users @relation("blocked_users_blocked_idTousers", fields: [blocked_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_blocked_users_blocker_idTousers users @relation("blocked_users_blocker_idTousers", fields: [blocker_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([blocker_id, blocked_id])
+}
+
+model interests {
+  interest_id           Int                     @id @default(autoincrement())
+  interest              String                  @unique @db.VarChar
+  interests_preferences interests_preferences[]
+  user_interests        user_interests[]
+}
+
+model interests_preferences {
+  interest_preference_id Int       @id @default(autoincrement())
+  user_id                Int
+  preferred_interest_id  Int
+  interests              interests @relation(fields: [preferred_interest_id], references: [interest_id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model likes {
+  like_id                     Int      @id @default(autoincrement())
+  liker_id                    Int
+  liked_id                    Int
+  created_at                  DateTime @default(now()) @db.Timestamptz(6)
+  users_likes_liked_idTousers users    @relation("likes_liked_idTousers", fields: [liked_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_likes_liker_idTousers users    @relation("likes_liker_idTousers", fields: [liker_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([liker_id, liked_id])
+}
+
+model major_preferences {
+  major_preference_id Int    @id @default(autoincrement())
+  user_id             Int
+  preferred_major_id  Int
+  majors              majors @relation(fields: [preferred_major_id], references: [major_id], onDelete: Cascade, onUpdate: NoAction)
+  users               users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model majors {
+  major_id          Int                 @id @default(autoincrement())
+  majors            String              @unique @db.VarChar
+  major_preferences major_preferences[]
+  users             users[]
+}
+
+model matches {
+  match_id                      Int               @id @default(autoincrement())
+  user1_id                      Int
+  user2_id                      Int
+  status                        match_status_enum @default(active)
+  created_at                    DateTime          @default(now()) @db.Timestamptz(6)
+  users_matches_user1_idTousers users             @relation("matches_user1_idTousers", fields: [user1_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_matches_user2_idTousers users             @relation("matches_user2_idTousers", fields: [user2_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  messages                      messages[]
+  notifications                 notifications[]
+
+  @@unique([user1_id, user2_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model messages {
+  message_id Int      @id @default(autoincrement())
+  match_id   Int
+  sender_id  Int?
+  message    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  unread     Boolean  @default(true)
+  matches    matches  @relation(fields: [match_id], references: [match_id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?   @relation(fields: [sender_id], references: [user_id], onUpdate: NoAction)
+}
+
+model notifications {
+  notification_id Int                    @id @default(autoincrement())
+  user_id         Int
+  match_id        Int
+  type            notification_type_enum
+  read            Boolean                @default(false)
+  created_at      DateTime               @default(now()) @db.Timestamptz(6)
+  matches         matches                @relation(fields: [match_id], references: [match_id], onDelete: Cascade, onUpdate: NoAction)
+  users           users                  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model passes {
+  pass_id                       Int      @id @default(autoincrement())
+  passer_id                     Int
+  passed_id                     Int
+  created_at                    DateTime @default(now()) @db.Timestamptz(6)
+  users_passes_passed_idTousers users    @relation("passes_passed_idTousers", fields: [passed_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  users_passes_passer_idTousers users    @relation("passes_passer_idTousers", fields: [passer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([passer_id, passed_id])
+}
+
+model skills {
+  skill_id           Int                  @id @default(autoincrement())
+  skill              String               @unique @db.VarChar
+  skills_preferences skills_preferences[]
+  user_skills        user_skills[]
+}
+
+model skills_preferences {
+  skill_preference_id Int    @id @default(autoincrement())
+  user_id             Int
+  preferred_skill_id  Int
+  skills              skills @relation(fields: [preferred_skill_id], references: [skill_id], onDelete: Cascade, onUpdate: NoAction)
+  users               users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_interests {
+  user_interest_id Int       @id @default(autoincrement())
+  user_id          Int
+  interest_id      Int
+  interests        interests @relation(fields: [interest_id], references: [interest_id], onDelete: Cascade, onUpdate: NoAction)
+  users            users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_links {
+  user_link_id Int    @id @default(autoincrement())
+  user_id      Int
+  link         String @db.VarChar
+  name_        String @db.VarChar
+  users        users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_projects {
+  user_project_id Int     @id @default(autoincrement())
+  user_id         Int
+  project_link    String? @db.VarChar
+  project_name    String  @db.VarChar
+  users           users   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user_skills {
+  user_skill_id Int    @id @default(autoincrement())
+  user_id       Int
+  skill_id      Int
+  skills        skills @relation(fields: [skill_id], references: [skill_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  user_id                                       Int                     @id @default(autoincrement())
+  email                                         String                  @unique @db.VarChar
+  password_hash                                 String                  @db.VarChar
+  verified                                      Boolean                 @default(false)
+  verification_token                            String?                 @db.VarChar
+  verification_expires_at                       DateTime?               @db.Timestamptz(6)
+  verification_resend_count                     Int                     @default(0)
+  verification_sent_at                          DateTime?               @db.Timestamptz(6)
+  full_name                                     String?                 @db.VarChar
+  year                                          Int?
+  major                                         Int?
+  profile_pic                                   String?                 @db.VarChar
+  biography                                     String?
+  ideas                                         String?
+  profile_updated_at                            DateTime?               @db.Timestamptz(6)
+  account_status                                account_status_enum     @default(pending)
+  deletion_time                                 DateTime?               @db.Timestamptz(6)
+  last_login                                    DateTime?               @db.Timestamptz(6)
+  created_at                                    DateTime                @default(now()) @db.Timestamptz(6)
+  auth_logs                                     auth_logs[]
+  blocked_users_blocked_users_blocked_idTousers blocked_users[]         @relation("blocked_users_blocked_idTousers")
+  blocked_users_blocked_users_blocker_idTousers blocked_users[]         @relation("blocked_users_blocker_idTousers")
+  interests_preferences                         interests_preferences[]
+  likes_likes_liked_idTousers                   likes[]                 @relation("likes_liked_idTousers")
+  likes_likes_liker_idTousers                   likes[]                 @relation("likes_liker_idTousers")
+  major_preferences                             major_preferences[]
+  matches_matches_user1_idTousers               matches[]               @relation("matches_user1_idTousers")
+  matches_matches_user2_idTousers               matches[]               @relation("matches_user2_idTousers")
+  messages                                      messages[]
+  notifications                                 notifications[]
+  passes_passes_passed_idTousers                passes[]                @relation("passes_passed_idTousers")
+  passes_passes_passer_idTousers                passes[]                @relation("passes_passer_idTousers")
+  skills_preferences                            skills_preferences[]
+  user_interests                                user_interests[]
+  user_links                                    user_links[]
+  user_projects                                 user_projects[]
+  user_skills                                   user_skills[]
+  majors                                        majors?                 @relation(fields: [major], references: [major_id], onDelete: NoAction, onUpdate: NoAction)
+  years                                         years?                  @relation(fields: [year], references: [year_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model years {
+  year_id Int     @id @default(autoincrement())
+  year    Int     @unique
+  users   users[]
+}
+
+enum account_status_enum {
+  pending
+  active
+  deleted
+  blocked
+}
+
+enum match_status_enum {
+  active
+  unmatched
+  blocked
+}
+
+enum notification_type_enum {
+  NEW_MATCH
+  NEW_MESSAGE
+  PROFILE_UPDATED
+}

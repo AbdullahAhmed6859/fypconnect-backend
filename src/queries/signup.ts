@@ -1,5 +1,6 @@
 import { prisma } from "../config/prisma.js";
 import * as bcrypt from "bcrypt";
+import { buildVerificationToken } from "./emailVerification.js";
 
 export async function signup(email: string, password: string) {
     try {     
@@ -19,15 +20,21 @@ export async function signup(email: string, password: string) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const {verificationToken, expiresAt} = buildVerificationToken();
+
         const newUser = await prisma.users.create({
             data: {
                 email,
                 password_hash: hashedPassword,
-                verified: false
+                verified: false,
+                verification_token: verificationToken,
+                verification_expires_at: expiresAt,
+                verification_sent_at: new Date(),
+                verification_resend_count: 0
             },
         });
 
-        return newUser;
+        return {newUser, verificationToken};
     } catch (error) {
         throw new Error("Error occurred while signing up");
     }

@@ -31,7 +31,7 @@ export async function verifyEmailToken(user_id: string) {
         }
         
 
-        await prisma.users.create({
+        await prisma.users.update({
              where: { user_id: user.user_id },
             data: {
                 verified: true,

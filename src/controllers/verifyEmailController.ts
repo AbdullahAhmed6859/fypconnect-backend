@@ -3,8 +3,7 @@ import { verifyEmailToken } from "../queries/emailVerification.js";
 import handleResponse from "../utils/handleResponse.js";
 
 export async function verifyEmailController(req: any, res: any){
-    const {token} = req.query.token;
-
+    const {token} = req.query.token as string || "";
     try{
         const result = await verifyEmailToken(token);
 

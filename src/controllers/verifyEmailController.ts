@@ -1,9 +1,8 @@
-import { prisma } from "../config/prisma.js";
 import { verifyEmailToken } from "../queries/emailVerification.js";
 import handleResponse from "../utils/handleResponse.js";
 
 export async function verifyEmailController(req: any, res: any){
-    const {token} = req.query.token as string || "";
+    const token = String(req.query.token || "");
     try{
         const result = await verifyEmailToken(token);
 

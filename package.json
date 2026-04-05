@@ -2,36 +2,34 @@
   "name": "fypconnect-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "tsx watch src/app.ts"
+    "dev": "nodemon -L --watch src --ext ts --exec tsx src/app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "morgan": "^1.10.1",
     "nodemailer": "^8.0.4",
-    "nodemon": "^3.1.14",
-    "pg": "^8.20.0",
-    "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.8",
-    "sequelize-auto": "^0.8.8"
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.5.0",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.5.2",
     "@types/nodemailer": "^7.0.11",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.0",
+    "nodemon": "^3.1.14",
     "prisma": "^7.6.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"

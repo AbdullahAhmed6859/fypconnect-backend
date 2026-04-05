@@ -25,6 +25,5 @@ logs/
 # Testing (if you add Vitest/Jest later)
 coverage/
 
-/src/generated/prisma
-
-/src/generated/prisma
+src/generated/
+generated/

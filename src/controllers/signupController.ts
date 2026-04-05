@@ -1,4 +1,3 @@
-import { send } from "node:process";
 import { signup } from "../queries/signup.js";
 import handleResponse from "../utils/handleResponse.js";
 import { sendVerificationEmail } from "../utils/sendVerificationEmail.js";

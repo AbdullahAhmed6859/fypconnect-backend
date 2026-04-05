@@ -6,7 +6,7 @@ import { resendVerificationController } from "../controllers/resendVerificationC
 const signupRouter = express.Router();
 
 signupRouter.post('/', signupController);
-signupRouter.get("/verify", verifyEmailController);
+signupRouter.post("/verify-email", verifyEmailController);
 signupRouter.post("/resend-verification", resendVerificationController);
 
 export default signupRouter;

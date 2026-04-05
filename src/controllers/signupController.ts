@@ -25,7 +25,7 @@ export async function signupController(req: any, res: any) {
         return handleResponse(
             res,
             201,
-            "User created successfully. Please check your email to verify your email ID",
+            "User created successfully. Please check your email for your verification token",
             {
                 user_id: newUser.user_id,
                 email: newUser.email,

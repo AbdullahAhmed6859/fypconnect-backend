@@ -4,20 +4,23 @@ import { sendVerificationEmail } from "../utils/sendVerificationEmail.js";
 
 
 export function buildVerificationToken() {
-    const rawToken = crypto.randomBytes(32).toString("hex");
+    const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 1000 * 60 * 15);
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
     return { rawToken, hashedToken, expiresAt };
 }
 
-export async function verifyEmailToken(token: string) {
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+export async function verifyEmailToken(email: string, token: string) {
+    if (!email || !token) {
+        throw new Error("Email and verification token are required");
+    }
 
-    const user = await prisma.users.findFirst({
-        where: { verification_token: hashedToken },
+    const user = await prisma.users.findUnique({
+        where: {email},
     });
+
     if (!user) {
-        throw new Error("Invalid verification token");
+        throw new Error("User not found");
     }
 
     if (user.verified) {
@@ -28,6 +31,12 @@ export async function verifyEmailToken(token: string) {
         user.verification_expires_at < new Date()
     ) {
         throw new Error("Verification token has expired");
+    }
+        
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    if (user.verification_token !== hashedToken) {
+        throw new Error("Invalid verification code");
     }
 
     await prisma.users.update({

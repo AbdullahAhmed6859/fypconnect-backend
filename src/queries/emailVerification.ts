@@ -1,50 +1,46 @@
 import { prisma } from "../config/prisma.js";
-import * as bcrypt from "bcrypt";
-import crypto from "crypto"
+import crypto from "crypto";
 import { sendVerificationEmail } from "../utils/sendVerificationEmail.js";
 
 
 export function buildVerificationToken() {
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const rawToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 15);
-    return { verificationToken, expiresAt }
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    return { rawToken, hashedToken, expiresAt };
 }
 
-export async function verifyEmailToken(user_id: string) {
-    try {     
-        const user = await prisma.users.findFirst({
-                    where: {user_id: user_id,
-                    },
-                });
-        if (!user) {
-                throw new Error("Invalid verification token");
-            }
+export async function verifyEmailToken(token: string) {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-        if (user.verified) {
-            return {alreadyVerified: true}
-            }
-        if (
-            !user.verification_expires_at ||
-            user.verification_expires_at < new Date()
-        ) {
-            throw new Error("Verification token has expired");
-        }
-        
-
-        await prisma.users.update({
-             where: { user_id: user.user_id },
-            data: {
-                verified: true,
-                verification_token: null,
-                verification_expires_at: null,
-                account_status: "active"
-            },
-        });
-
-        return {alreadyVerified: false};
-    } catch (error) {
-        throw new Error("Error occurred while verifying email");
+    const user = await prisma.users.findFirst({
+        where: { verification_token: hashedToken },
+    });
+    if (!user) {
+        throw new Error("Invalid verification token");
     }
+
+    if (user.verified) {
+        return { alreadyVerified: true };
+    }
+    if (
+        !user.verification_expires_at ||
+        user.verification_expires_at < new Date()
+    ) {
+        throw new Error("Verification token has expired");
+    }
+
+    await prisma.users.update({
+        where: { user_id: user.user_id },
+        data: {
+            verified: true,
+            verification_token: null,
+            verification_expires_at: null,
+            account_status: "active",
+        },
+    });
+
+    return { alreadyVerified: false };
 }
 
 
@@ -76,12 +72,12 @@ export async function resendVerificationEmailForUser(email: string) {
         throw new Error("Maximum resend attempts reached");
     }
 
-    const { verificationToken, expiresAt } = buildVerificationToken();
+    const { rawToken, hashedToken, expiresAt } = buildVerificationToken();
 
     await prisma.users.update({
         where: { user_id: user.user_id },
         data: {
-            verification_token: verificationToken,
+            verification_token: hashedToken,
             verification_expires_at: expiresAt,
             verification_sent_at: new Date(),
             verification_resend_count: {
@@ -90,5 +86,5 @@ export async function resendVerificationEmailForUser(email: string) {
         },
     });
 
-    await sendVerificationEmail(user.email, verificationToken);
+    await sendVerificationEmail(user.email, rawToken);
 }

@@ -1,10 +1,10 @@
 import "dotenv/config";
 import express, { type Request, type Response } from "express";
-import signupRouter from "./routers/signupRouter.js";
 import cors from "cors";
 import morgan from "morgan";
 import { prisma } from "./db/prisma";
 import { logger } from "./utils/logger.js";
+import authRouter from "./routers/authRouter";
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.use(morgan("dev"));
 
 const PORT = process.env.PORT || 3000;
 
-app.use("/signup", signupRouter);
+app.use("/api/v1/auth", authRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from the typescript server!");

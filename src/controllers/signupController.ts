@@ -8,7 +8,7 @@ export async function signupController(req: any, res: any) {
         const {newUser, rawToken} = await signup(email, password);
         try {
             await sendVerificationEmail(newUser.email, rawToken);
-        } catch {
+        } catch (error) {
             return handleResponse(
                 res,
                 201,

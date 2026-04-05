@@ -5,11 +5,13 @@ import morgan from "morgan";
 import { prisma } from "./db/prisma";
 import { logger } from "./utils/logger.js";
 import authRouter from "./routers/authRouter";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 app.use(morgan("dev"));
 
 const PORT = process.env.PORT || 3000;

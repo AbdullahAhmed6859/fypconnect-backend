@@ -6,6 +6,8 @@ import {
 } from "../queries/emailVerification";
 import { signup } from "../queries/signup";
 import { sendVerificationEmail } from "../utils/sendVerificationEmail";
+import { login } from "../queries/login";
+import { createToken } from "../utils/jwt";
 
 export async function resendVerificationController(req: any, res: any) {
   const { email } = req.body;
@@ -69,6 +71,46 @@ export async function verifyEmailController(req: any, res: any) {
   }
 }
 
-export async function loginController(req: Request, res: Response) {
-  handleResponse(res, 200, "Login controller is working!");
+export async function loginController(req: any, res: any) {
+  const { email, password } = req.body;
+
+  try {
+    const user = await login(email, password);
+
+    const token = await createToken({
+      user_id: user.user_id,
+      email: user.email,
+    });
+
+    res.cookie("auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return handleResponse(res, 200, "Login successful", {
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        verified: user.verified,
+      },
+    });
+  } catch (error: any) {
+    return handleResponse(res, 401, error.message);
+  }
+}
+
+export async function logoutController(req: any, res: any) {
+  res.clearCookie("auth_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  return handleResponse(res, 200, "Logout successful");
+}
+
+export async function protectedController(req: any, res: any) {
+  return handleResponse(res, 200, "You have accessed a protected route", {
+    user: req.user,
+  });
 }

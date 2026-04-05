@@ -4,6 +4,7 @@ import signupRouter from "./routers/signupRouter.js";
 import cors from "cors";
 import morgan from "morgan";
 import { prisma } from "./db/prisma";
+import { logger } from "./utils/logger.js";
 
 const app = express();
 
@@ -25,7 +26,7 @@ async function startServer() {
     console.log("✅ Successfully connected to the database");
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      logger.info(`🚀 Server is running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error("❌ Failed to connect to the database:");

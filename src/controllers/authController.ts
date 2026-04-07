@@ -16,7 +16,7 @@ export async function resendVerificationController(req: any, res: any) {
     await resendVerificationEmailForUser(email);
     return handleResponse(res, 200, "Verification email resent successfully");
   } catch (error: any) {
-    return handleResponse(res, 400, error.message);
+   return handleResponse(res, error.statusCode ?? 400, error.message);
   }
 }
 
@@ -52,7 +52,7 @@ export async function signupController(req: any, res: any) {
       },
     );
   } catch (error: any) {
-    return handleResponse(res, 400, error.message);
+    return handleResponse(res, error.statusCode ?? 400, error.message);
   }
 }
 
@@ -67,7 +67,7 @@ export async function verifyEmailController(req: any, res: any) {
 
     return handleResponse(res, 200, "Email verified successfully");
   } catch (error: any) {
-    return handleResponse(res, 400, error.message);
+    return handleResponse(res, error.statusCode ?? 400, error.message);
   }
 }
 
@@ -96,7 +96,7 @@ export async function loginController(req: any, res: any) {
       },
     });
   } catch (error: any) {
-    return handleResponse(res, 401, error.message);
+    return handleResponse(res, error.statusCode ?? 401, error.message);
   }
 }
 

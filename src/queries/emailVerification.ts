@@ -4,7 +4,7 @@ import { sendVerificationEmail } from "../utils/sendVerificationEmail";
 
 export function buildVerificationToken() {
   const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 15);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const hashedToken = crypto
     .createHash("sha256")
     .update(rawToken)
@@ -70,16 +70,20 @@ export async function resendVerificationEmailForUser(email: string) {
     throw new Error("Email is already verified");
   }
 
-  if (
-    user.verification_sent_at &&
-    Date.now() - new Date(user.verification_sent_at).getTime() < 60 * 1000
-  ) {
-    throw new Error("Please wait before requesting another verification email");
+  const now = new Date();
+  const oneHourMs = 60 * 60 * 1000;
+  let resendCount = user.verification_resend_count;
+  const sentAt = user.verification_sent_at;
+
+  if (!sentAt || now.getTime() - sentAt.getTime() >= oneHourMs) {
+    resendCount = 0;
   }
 
-  if (user.verification_resend_count >= 5) {
-    throw new Error("Maximum resend attempts reached");
-  }
+  if (resendCount >= 3) {
+  const err = new Error("Verification email resend limit exceeded. Try again later.");
+  (err as any).statusCode = 429;
+  throw err;
+}
 
   const { rawToken, hashedToken, expiresAt } = buildVerificationToken();
 
@@ -89,9 +93,7 @@ export async function resendVerificationEmailForUser(email: string) {
       verification_token: hashedToken,
       verification_expires_at: expiresAt,
       verification_sent_at: new Date(),
-      verification_resend_count: {
-        increment: 1,
-      },
+      verification_resend_count: resendCount + 1,
     },
   });
 

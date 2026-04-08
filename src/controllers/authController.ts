@@ -36,6 +36,7 @@ export async function signupController(req: any, res: any) {
           email: newUser.email,
           verified: newUser.verified,
           account_status: newUser.account_status,
+          codeExpiresInHours: 24
         },
       );
     }
@@ -49,6 +50,7 @@ export async function signupController(req: any, res: any) {
         email: newUser.email,
         verified: newUser.verified,
         account_status: newUser.account_status,
+        codeExpiresInHours: 24
       },
     );
   } catch (error: any) {
@@ -62,7 +64,11 @@ export async function verifyEmailController(req: any, res: any) {
     const result = await verifyEmailToken(email, token);
 
     if (result.alreadyVerified) {
-      return handleResponse(res, 200, "Email is already verified");
+      return handleResponse(res, 200, "Email is already verified",
+        {email: email,
+         verificationStatus:"verified"
+        }
+      );
     }
 
     return handleResponse(res, 200, "Email verified successfully");

@@ -37,9 +37,10 @@ export async function verifyEmailToken(email: string, token: string) {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   if (user.verification_token !== hashedToken) {
-    throw new Error("Invalid verification code");
+    const err = new Error("Invalid verification code");
+    (err as any).statusCode = 400;
+    throw err;
   }
-
   await prisma.users.update({
     where: { user_id: user.user_id },
     data: {
@@ -63,7 +64,9 @@ export async function resendVerificationEmailForUser(email: string) {
   });
 
   if (!user) {
-    throw new Error("User not found");
+    const err = new Error("User not found");
+    (err as any).statusCode = 404;
+    throw err;
   }
 
   if (user.verified) {

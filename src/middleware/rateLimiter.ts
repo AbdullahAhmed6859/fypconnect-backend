@@ -78,15 +78,16 @@ export const createRateLimiter = (options: Partial<Options>) => {
 };
 
 export const loginRateLimiter = rateLimit({
-    windowMs: 30 * 60 * 1000,
+    windowMs: 15 * 60 * 1000,
     limit: 5,
     skipSuccessfulRequests: true,
-    standardHeaders: 'draft-8',
+    standardHeaders: "draft-8",
     legacyHeaders: false,
     store: new LoginFailureStore(),
-    keyGenerator: (req) => (req.headers['x-user-id'] as string) ?? req.ip ?? 'unknown',
+    keyGenerator: (req) => String(req.body?.email ?? req.ip ?? "unknown").toLowerCase(),
+    statusCode: 423,
     message: {
-        status: 429,
-        error: 'Too many failed login attempts. Please try again in 30 minutes.',
+        status: 423,
+        error: "Too many failed login attempts. Please try again in 30 minutes.",
     },
 });

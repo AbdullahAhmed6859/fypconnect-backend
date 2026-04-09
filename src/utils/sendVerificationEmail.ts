@@ -17,7 +17,7 @@ export async function sendVerificationEmail(email: string, token: string){
             <h2>Verify your email</h2>
             <p>Your verification code is:</p>
             <h1>${token}</h1>
-            <p>This code will expire in 15 minutes.</p>
+            <p>This code will expire in 24 hours.</p>
         `,
     });
 }

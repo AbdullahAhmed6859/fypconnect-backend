@@ -85,6 +85,7 @@ export async function getProfile(userId: number) {
         profile_pic: true,
         biography: true,
         ideas: true,
+        account_status: true,
         created_at: true,
         profile_updated_at: true,
         years: {
@@ -142,7 +143,8 @@ export async function getProfile(userId: number) {
     }, {});
 
     const profileCompleted = Boolean(
-        user.full_name && user.years?.year_id && user.majors?.major_id
+        user.full_name && user.years?.year_id && user.majors?.major_id && 
+        user.account_status == account_status_enum.active
     );
 
     return {

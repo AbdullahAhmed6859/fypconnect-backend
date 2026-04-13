@@ -5,7 +5,7 @@ import morgan from "morgan";
 import { prisma } from "./db/prisma";
 import { logger } from "./utils/logger.js";
 import authRouter from "./routers/authRouter";
-import profileRouter from "./routers/profileRouter";
+import profileRouter from "./routers/profileRouter.js";
 import scheduleUnverifiedUserDeletion from "./cronJob/deleteUnverified.js";
 import cookieParser from "cookie-parser";
 

@@ -1,3 +1,4 @@
+import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../db/prisma";
 import AppError from "../utils/appError";
 
@@ -22,6 +23,8 @@ type UpdateProfilePayload = {
 };
 
 const LINK_NAMES: AllowedLinkName[] = ["github", "linkedin", "portfolio"];
+
+type PrismaExecutor = Prisma.TransactionClient | typeof prisma;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -208,7 +211,10 @@ async function assertInterestIdsExist(interestIds: number[]) {
   }
 }
 
-async function getProfileRecord(userId: number, client = prisma) {
+async function getProfileRecord(
+  userId: number,
+  client: PrismaExecutor = prisma,
+) {
   return client.users.findUnique({
     where: { user_id: userId },
     include: {

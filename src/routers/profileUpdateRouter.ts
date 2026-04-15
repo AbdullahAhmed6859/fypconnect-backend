@@ -3,7 +3,7 @@ import { protect } from "../middleware/auth";
 import {
   getMyProfileController,
   updateMyProfileController,
-} from "../controllers/profileController.js";
+} from "../controllers/profileUpdateController.js";
 
 const profileRouter = express.Router();
 

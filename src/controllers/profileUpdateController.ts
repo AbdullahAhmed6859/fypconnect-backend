@@ -1,5 +1,5 @@
 import handleResponse from "../utils/handleResponse";
-import { getMyProfile, updateMyProfile } from "../queries/profile.js";
+import { getMyProfile, updateMyProfile } from "../queries/profileUpdate.js";
 
 export async function getMyProfileController(req: any, res: any) {
   try {

@@ -7,6 +7,6 @@ const profileRouter = Router();
 
 profileRouter.post("/setup", setupProfile);
 profileRouter.get("/me", getUserProfile);
-profileRouter.patch("/update", protect, updateMyProfileController);
+profileRouter.patch("/update", updateMyProfileController);
 
 export default profileRouter;

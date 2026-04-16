@@ -5,9 +5,10 @@ import morgan from "morgan";
 import { prisma } from "./db/prisma";
 import { logger } from "./utils/logger.js";
 import authRouter from "./routers/authRouter";
-import profileRouter from "./routers/profileRouter.js";
+import profileRouter from "./routers/profileRouter";
 import scheduleUnverifiedUserDeletion from "./cronJob/deleteUnverified.js";
 import cookieParser from "cookie-parser";
+import { protect } from "./middleware/auth";
 
 const app = express();
 
@@ -23,7 +24,7 @@ scheduleUnverifiedUserDeletion();
 const PORT = process.env.PORT || 5000;
 
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/profile", profileRouter);
+app.use("/api/v1/profile", protect, profileRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from the typescript server!");

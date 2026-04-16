@@ -6,6 +6,7 @@ import { prisma } from "./db/prisma";
 import { logger } from "./utils/logger.js";
 import authRouter from "./routers/authRouter";
 import profileRouter from "./routers/profileRouter";
+import matchesRouter from "./routers/matchesRouter.js";
 import scheduleUnverifiedUserDeletion from "./cronJob/deleteUnverified.js";
 import cookieParser from "cookie-parser";
 import { protect } from "./middleware/auth";
@@ -25,6 +26,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/profile", protect, profileRouter);
+app.use("/api/v1/matches", protect, matchesRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from the typescript server!");

@@ -3,6 +3,7 @@ import {
     account_status_enum,
     Prisma,
 } from "../generated/prisma";
+import AppError from "../utils/appError";
 
 type ProjectInput = {
     project_name: string;

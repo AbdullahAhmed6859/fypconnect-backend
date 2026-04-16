@@ -1,4 +1,5 @@
 import { ProfileSetupInput, profileSetup, getProfile } from "../queries/profile.js";
+import { updateMyProfile } from "../queries/profileUpdate.js";
 import handleResponse from "../utils/handleResponse.js";
 
 export const setupProfile = async (req: any, res: any) => {
@@ -22,4 +23,13 @@ export const getUserProfile = async (req: any, res: any) => {
     } catch (error: any) {
         return handleResponse(res, 400, error.message);
     }
+}
+
+export async function updateMyProfileController(req: any, res: any) {
+  try {
+    const result = await updateMyProfile(Number(req.user.user_id), req.body);
+    return handleResponse(res, 200, "Profile updated successfully", result);
+  } catch (error: any) {
+    return handleResponse(res, error.statusCode ?? 400, error.message);
+  }
 }

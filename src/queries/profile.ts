@@ -2,7 +2,7 @@ import { prisma } from "../db/prisma";
 import {
     account_status_enum,
     Prisma,
-} from "../generated/prisma";
+} from "@prisma/client";
 import AppError from "../utils/appError";
 
 type ProjectInput = {

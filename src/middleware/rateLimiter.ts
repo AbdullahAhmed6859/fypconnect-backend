@@ -1,19 +1,10 @@
-// import { rateLimit, Options } from 'express-rate-limit';
-
-// export const createRateLimiter = (options: Partial<Options>) => {
-//     return rateLimit({
-//         windowMs: 60 * 60 * 1000,
-//         limit: 3,
-//         standardHeaders: 'draft-8',
-//         legacyHeaders: false,
-//         keyGenerator: (req) => {
-//             return (req.headers['x-user-id'] as string) ?? req.ip;
-//         },
-//         ...options,
-//     });
-// };
-
-import { rateLimit, Options, Store, IncrementResponse } from 'express-rate-limit';
+import {
+    rateLimit,
+    type Options,
+    type Store,
+    type IncrementResponse,
+    ipKeyGenerator,
+} from "express-rate-limit";
 
 interface AttemptRecord {
     count: number;
@@ -31,20 +22,20 @@ class LoginFailureStore implements Store {
         const existing = this.records.get(key);
 
         if (!existing || now >= existing.resetTime.getTime()) {
-            const record: AttemptRecord = {
-                count: 1,
-                resetTime: new Date(now + this.COUNT_WINDOW_MS),
-                isBlocked: false,
-            };
-            this.records.set(key, record);
-            return { totalHits: record.count, resetTime: record.resetTime };
+        const record: AttemptRecord = {
+            count: 1,
+            resetTime: new Date(now + this.COUNT_WINDOW_MS),
+            isBlocked: false,
+        };
+        this.records.set(key, record);
+        return { totalHits: record.count, resetTime: record.resetTime };
         }
 
         existing.count++;
 
         if (existing.count >= 5 && !existing.isBlocked) {
-            existing.isBlocked = true;
-            existing.resetTime = new Date(now + this.BLOCK_DURATION_MS);
+        existing.isBlocked = true;
+        existing.resetTime = new Date(now + this.BLOCK_DURATION_MS);
         }
 
         return { totalHits: existing.count, resetTime: existing.resetTime };
@@ -53,7 +44,7 @@ class LoginFailureStore implements Store {
     async decrement(key: string): Promise<void> {
         const record = this.records.get(key);
         if (record && record.count > 0 && !record.isBlocked) {
-            record.count--;
+        record.count--;
         }
     }
 
@@ -70,9 +61,17 @@ export const createRateLimiter = (options: Partial<Options>) => {
     return rateLimit({
         windowMs: 60 * 60 * 1000,
         limit: 3,
-        standardHeaders: 'draft-8',
+        standardHeaders: "draft-8",
         legacyHeaders: false,
-        keyGenerator: (req) => (req.headers['x-user-id'] as string) ?? req.ip ?? 'unknown',
+        keyGenerator: (req) => {
+        const userIdHeader = req.headers["x-user-id"];
+
+        if (typeof userIdHeader === "string" && userIdHeader.trim() !== "") {
+            return `user:${userIdHeader}`;
+        }
+
+        return `ip:${ipKeyGenerator(req.ip ?? "")}`;
+        },
         ...options,
     });
 };
@@ -84,7 +83,15 @@ export const loginRateLimiter = rateLimit({
     standardHeaders: "draft-8",
     legacyHeaders: false,
     store: new LoginFailureStore(),
-    keyGenerator: (req) => String(req.body?.email ?? req.ip ?? "unknown").toLowerCase(),
+    keyGenerator: (req) => {
+        const email = req.body?.email;
+
+        if (typeof email === "string" && email.trim() !== "") {
+        return `email:${email.trim().toLowerCase()}`;
+        }
+
+        return `ip:${ipKeyGenerator(req.ip ?? "")}`;
+    },
     statusCode: 423,
     message: {
         status: 423,

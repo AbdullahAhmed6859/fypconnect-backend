@@ -522,3 +522,33 @@ export function normalizePreferencesInput(payload: Record<string, unknown>): Pre
             normalizeOptionalIdArray(payload.preferredInterestIds, "preferredInterestIds") ?? [],
     };
 }
+
+export async function getSkillsAndInterests() {
+    try {
+        const [skills, interests] = await prisma.$transaction([
+            prisma.skills.findMany({
+            select: { skill_id: true, skill: true },
+            orderBy: { skill_id: "asc" },
+            }),
+            prisma.interests.findMany({
+            select: { interest_id: true, interest: true },
+            orderBy: { interest_id: "asc" },
+            }),
+        ]);
+        return {
+            data: {
+            skills: skills.map((item) => ({
+                id: item.skill_id,
+                name: item.skill,
+            })),
+            interests: interests.map((item) => ({
+                id: item.interest_id,
+                name: item.interest,
+            })),
+            },
+        };
+    } catch (error) {
+        throw new AppError("Failed to retrieve skills and interests", 500);
+    }
+}
+

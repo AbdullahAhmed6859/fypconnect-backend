@@ -5,9 +5,23 @@ import {
     getPreferences,
     normalizePreferencesInput,
     savePreferences,
+    getSkillsAndInterests
 } from "../queries/profile.js";
 import { updateMyProfile } from "../queries/profileUpdate.js";
 import handleResponse from "../utils/handleResponse.js";
+
+export const getSkillsAndInterestsController = async (req: any, res: any) => {
+    const userId = req.user.user_id;
+    if (!userId) {
+        return handleResponse(res, 401, "Unauthorized");
+    }
+    try {
+        const data = await getSkillsAndInterests();
+        return handleResponse(res, 200, "Skills and interests retrieved successfully", data);
+    } catch (error: any) {
+        return handleResponse(res, 400, error.message);
+    }
+}
 
 export const setupProfile = async (req: any, res: any) => {
     const ProfileSetupInput: ProfileSetupInput = req.body;

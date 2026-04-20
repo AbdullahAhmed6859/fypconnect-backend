@@ -19,8 +19,10 @@ export async function signup(email: string, password: string) {
   // console.log("database query completed, checking if user exists");
 
   if (existingUser) {
-    throw new Error("Email is already in use");
-  }
+  const err = new Error("An account with this email already exists");
+  (err as any).statusCode = 409;
+  throw err;
+}
 
   console.log("email is valid and not in use, proceeding to hash password");
   const hashedPassword = await bcrypt.hash(password, 10);

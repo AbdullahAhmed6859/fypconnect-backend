@@ -535,11 +535,19 @@ export async function getSkillsAndInterests() {
             orderBy: { majors: "asc" },
             }),
             prisma.skills.findMany({
-            select: { skill_id: true, skill: true },
+            select: {
+                skill_id: true,
+                skill: true,
+                _count: { select: { user_skills: true } },
+            },
             orderBy: { skill_id: "asc" },
             }),
             prisma.interests.findMany({
-            select: { interest_id: true, interest: true },
+            select: {
+                interest_id: true,
+                interest: true,
+                _count: { select: { user_interests: true } },
+            },
             orderBy: { interest_id: "asc" },
             }),
         ]);
@@ -557,10 +565,12 @@ export async function getSkillsAndInterests() {
             skills: skills.map((item) => ({
                 id: item.skill_id,
                 name: item.skill,
+                userCount: item._count.user_skills,
             })),
             interests: interests.map((item) => ({
                 id: item.interest_id,
                 name: item.interest,
+                userCount: item._count.user_interests,
             })),
             },
         };

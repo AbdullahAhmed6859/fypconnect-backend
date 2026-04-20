@@ -1,4 +1,11 @@
-import { ProfileSetupInput, profileSetup, getProfile, getPreferences} from "../queries/profile.js";
+import {
+    ProfileSetupInput,
+    profileSetup,
+    getProfile,
+    getPreferences,
+    normalizePreferencesInput,
+    savePreferences,
+} from "../queries/profile.js";
 import { updateMyProfile } from "../queries/profileUpdate.js";
 import handleResponse from "../utils/handleResponse.js";
 
@@ -33,6 +40,20 @@ export const getUserPreferences = async (req: any, res: any) => {
         return handleResponse(res, 200, "Preferences retrieved successfully", preferences);
     } catch (error: any) {
         return handleResponse(res, 400, error.message);
+    }
+}
+
+export const updateUserPreferences = async (req: any, res: any) => {
+    try {
+        const preferencesInput = normalizePreferencesInput({
+            ...req.body,
+            userId: req.user.user_id,
+        });
+
+        const preferences = await savePreferences(preferencesInput);
+        return handleResponse(res, 200, "Preferences updated successfully", preferences);
+    } catch (error: any) {
+        return handleResponse(res, error.statusCode ?? 400, error.message);
     }
 }
 

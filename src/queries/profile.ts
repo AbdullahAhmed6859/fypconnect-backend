@@ -41,6 +41,78 @@ type PreferencesInput = {
     preferredInterestIds?: number[];
 };
 
+function normalizeRequiredIdArray(value: unknown, field: string): number[] {
+    if (!Array.isArray(value)) {
+        throw new AppError(`${field} must be an array of integers`, 400);
+    }
+
+    const ids = [...new Set(value.map((item) => Number(item)))];
+
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+        throw new AppError(`${field} must contain at least one valid integer`, 400);
+    }
+
+    return ids;
+}
+
+function normalizeOptionalIdArray(value: unknown, field: string): number[] | undefined {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) {
+        throw new AppError(`${field} must be an array of integers`, 400);
+    }
+
+    const ids = [...new Set(value.map((item) => Number(item)))];
+
+    if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+        throw new AppError(`${field} must contain valid integers`, 400);
+    }
+
+    return ids;
+}
+
+async function assertMajorIdsExist(
+    tx: Prisma.TransactionClient,
+    majorIds: number[]
+) {
+    const count = await tx.majors.count({
+        where: { major_id: { in: majorIds } },
+    });
+
+    if (count !== majorIds.length) {
+        throw new AppError("One or more preferred major IDs are invalid", 400);
+    }
+}
+
+async function assertSkillIdsExist(
+    tx: Prisma.TransactionClient,
+    skillIds: number[]
+) {
+    if (skillIds.length === 0) return;
+
+    const count = await tx.skills.count({
+        where: { skill_id: { in: skillIds } },
+    });
+
+    if (count !== skillIds.length) {
+        throw new AppError("One or more preferred skill IDs are invalid", 400);
+    }
+}
+
+async function assertInterestIdsExist(
+    tx: Prisma.TransactionClient,
+    interestIds: number[]
+) {
+    if (interestIds.length === 0) return;
+
+    const count = await tx.interests.count({
+        where: { interest_id: { in: interestIds } },
+    });
+
+    if (count !== interestIds.length) {
+        throw new AppError("One or more preferred interest IDs are invalid", 400);
+    }
+}
+
 function normalizeLinks(
     links?: LinksInput
 ): { name_: string; link: string }[] {
@@ -355,6 +427,33 @@ export async function savePreferences(input: PreferencesInput) {
     } = input;
 
     return prisma.$transaction(async (tx) => {
+    const user = await tx.users.findUnique({
+        where: { user_id: userId },
+        select: {
+        user_id: true,
+        full_name: true,
+        year: true,
+        major: true,
+        account_status: true,
+        },
+    });
+
+    if (!user || user.account_status !== account_status_enum.active) {
+        throw new AppError("User not found", 404);
+    }
+
+    const profileCompleted = Boolean(user.full_name && user.year && user.major);
+
+    if (!profileCompleted) {
+        throw new AppError("Profile not yet created", 404);
+    }
+
+    await Promise.all([
+        assertMajorIdsExist(tx, preferredMajorIds),
+        assertSkillIdsExist(tx, preferredSkillIds),
+        assertInterestIdsExist(tx, preferredInterestIds),
+    ]);
+
     await tx.major_preferences.deleteMany({
         where: { user_id: userId },
     });
@@ -408,4 +507,18 @@ export async function savePreferences(input: PreferencesInput) {
         },
     };
     });
+}
+
+export function normalizePreferencesInput(payload: Record<string, unknown>): PreferencesInput {
+    return {
+        userId: Number(payload.userId),
+        preferredMajorIds: normalizeRequiredIdArray(
+            payload.preferredMajorIds,
+            "preferredMajorIds"
+        ),
+        preferredSkillIds:
+            normalizeOptionalIdArray(payload.preferredSkillIds, "preferredSkillIds") ?? [],
+        preferredInterestIds:
+            normalizeOptionalIdArray(payload.preferredInterestIds, "preferredInterestIds") ?? [],
+    };
 }

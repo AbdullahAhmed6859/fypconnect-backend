@@ -525,7 +525,15 @@ export function normalizePreferencesInput(payload: Record<string, unknown>): Pre
 
 export async function getSkillsAndInterests() {
     try {
-        const [skills, interests] = await prisma.$transaction([
+        const [years, majors, skills, interests] = await prisma.$transaction([
+            prisma.years.findMany({
+            select: { year_id: true, year: true },
+            orderBy: { year: "asc" },
+            }),
+            prisma.majors.findMany({
+            select: { major_id: true, majors: true },
+            orderBy: { majors: "asc" },
+            }),
             prisma.skills.findMany({
             select: { skill_id: true, skill: true },
             orderBy: { skill_id: "asc" },
@@ -537,6 +545,15 @@ export async function getSkillsAndInterests() {
         ]);
         return {
             data: {
+            years: years.map((item) => ({
+                id: item.year_id,
+                name: `Year ${item.year}`,
+                value: item.year,
+            })),
+            majors: majors.map((item) => ({
+                id: item.major_id,
+                name: item.majors,
+            })),
             skills: skills.map((item) => ({
                 id: item.skill_id,
                 name: item.skill,
@@ -548,7 +565,7 @@ export async function getSkillsAndInterests() {
             },
         };
     } catch (error) {
-        throw new AppError("Failed to retrieve skills and interests", 500);
+        throw new AppError("Failed to retrieve profile setup options", 500);
     }
 }
 

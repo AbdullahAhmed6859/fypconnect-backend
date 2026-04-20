@@ -25,6 +25,52 @@ type DiscoveryProfile = {
   links: Record<string, string>;
 };
 
+type CurrentUserBrowseAttributes = {
+  majorId: number | null;
+  skillIds: number[];
+  interestIds: number[];
+};
+
+function hasAnyOverlap(left: number[], right: number[]) {
+  return left.some((value) => right.includes(value));
+}
+
+function candidateCanSeeCurrentUser(
+  currentUser: CurrentUserBrowseAttributes,
+  candidate: {
+    major_preferences: Array<{ preferred_major_id: number }>;
+    skills_preferences: Array<{ preferred_skill_id: number }>;
+    interests_preferences: Array<{ preferred_interest_id: number }>;
+  }
+) {
+  const preferredMajorIds = candidate.major_preferences.map(
+    (item) => item.preferred_major_id
+  );
+  const preferredSkillIds = candidate.skills_preferences.map(
+    (item) => item.preferred_skill_id
+  );
+  const preferredInterestIds = candidate.interests_preferences.map(
+    (item) => item.preferred_interest_id
+  );
+
+  const matchesMajor =
+    preferredMajorIds.length === 0
+      ? true
+      : currentUser.majorId !== null && preferredMajorIds.includes(currentUser.majorId);
+
+  const matchesSkills =
+    preferredSkillIds.length === 0
+      ? true
+      : hasAnyOverlap(currentUser.skillIds, preferredSkillIds);
+
+  const matchesInterests =
+    preferredInterestIds.length === 0
+      ? true
+      : hasAnyOverlap(currentUser.interestIds, preferredInterestIds);
+
+  return matchesMajor && matchesSkills && matchesInterests;
+}
+
 function parsePositiveInteger(value: string, field: string) {
   const parsed = Number(value);
 
@@ -111,6 +157,33 @@ export async function getDiscoveryProfiles(
     assertInterestIdsExist(interestIds),
   ]);
 
+  const currentUser = await prisma.users.findUnique({
+    where: { user_id: currentUserId },
+    select: {
+      major: true,
+      user_skills: {
+        select: {
+          skill_id: true,
+        },
+      },
+      user_interests: {
+        select: {
+          interest_id: true,
+        },
+      },
+    },
+  });
+
+  if (!currentUser) {
+    throw new AppError("User not found", 404);
+  }
+
+  const currentUserBrowseAttributes: CurrentUserBrowseAttributes = {
+    majorId: currentUser.major ?? null,
+    skillIds: currentUser.user_skills.map((item) => item.skill_id),
+    interestIds: currentUser.user_interests.map((item) => item.interest_id),
+  };
+
   const where: any = {
     user_id: { not: currentUserId },
     account_status: "active",
@@ -173,7 +246,7 @@ export async function getDiscoveryProfiles(
 
   const users = await prisma.users.findMany({
     where,
-    take: limit,
+    take: Math.min(limit * 5, 200),
     orderBy: [
       { profile_updated_at: "desc" },
       { created_at: "desc" },
@@ -227,20 +300,38 @@ export async function getDiscoveryProfiles(
           link: true,
         },
       },
+      major_preferences: {
+        select: {
+          preferred_major_id: true,
+        },
+      },
+      skills_preferences: {
+        select: {
+          preferred_skill_id: true,
+        },
+      },
+      interests_preferences: {
+        select: {
+          preferred_interest_id: true,
+        },
+      },
     },
   });
 
-  return users.map((user) => ({
-    userId: user.user_id,
-    fullName: user.full_name,
-    major: user.majors?.majors ?? null,
-    yearOfStudy: user.years?.year ?? null,
-    profilePicture: user.profile_pic,
-    bio: user.biography,
-    fypIdea: user.ideas,
-    skills: user.user_skills.map((item) => item.skills.skill),
-    interests: user.user_interests.map((item) => item.interests.interest),
-    projects: user.user_projects,
-    links: Object.fromEntries(user.user_links.map((item) => [item.name_, item.link])),
-  }));
+  return users
+    .filter((user) => candidateCanSeeCurrentUser(currentUserBrowseAttributes, user))
+    .slice(0, limit)
+    .map((user) => ({
+      userId: user.user_id,
+      fullName: user.full_name,
+      major: user.majors?.majors ?? null,
+      yearOfStudy: user.years?.year ?? null,
+      profilePicture: user.profile_pic,
+      bio: user.biography,
+      fypIdea: user.ideas,
+      skills: user.user_skills.map((item) => item.skills.skill),
+      interests: user.user_interests.map((item) => item.interests.interest),
+      projects: user.user_projects,
+      links: Object.fromEntries(user.user_links.map((item) => [item.name_, item.link])),
+    }));
 }

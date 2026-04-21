@@ -9,6 +9,7 @@ import profileRouter from "./routers/profileRouter";
 import matchesRouter from "./routers/matchesRouter.js";
 import discoveryRouter from "./routers/discoveryRouter.js";
 import browseRouter from "./routers/browseRouter.js";
+import conversationRouter from "./routers/conversationRouter.js";
 import scheduleUnverifiedUserDeletion from "./cronJob/deleteUnverified.js";
 import cookieParser from "cookie-parser";
 import { protect } from "./middleware/auth";
@@ -31,6 +32,7 @@ app.use("/api/v1/profile", protect, profileRouter);
 app.use("/api/v1/matches", protect, matchesRouter);
 app.use("/api/v1/discovery", protect, discoveryRouter);
 app.use("/api/v1/browse", protect, browseRouter);
+app.use("/api/v1/chat", protect, conversationRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from the typescript server!");

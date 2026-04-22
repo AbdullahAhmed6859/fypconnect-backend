@@ -4,7 +4,8 @@ import {
     updateMyProfileController,
     getUserPreferences,
     updateUserPreferences,
-    getSkillsAndInterestsController
+    getSkillsAndInterestsController,
+    dismissAnnualYearReviewController
 } from "../controllers/profileController.js";
 import { Router } from "express";
 
@@ -16,5 +17,6 @@ profileRouter.patch("/update", updateMyProfileController);
 profileRouter.get("/preferences", getUserPreferences);
 profileRouter.put("/preferences", updateUserPreferences);
 profileRouter.get("/skills-interests", getSkillsAndInterestsController);
+profileRouter.post("/annual-year-review/dismiss", dismissAnnualYearReviewController);
 
 export default profileRouter;

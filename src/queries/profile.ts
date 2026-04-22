@@ -149,6 +149,26 @@ async function getYearValueById(
     return yearRecord?.year ?? null;
 }
 
+function getAnnualYearReviewState(dismissedYear?: number | null) {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentYearReviewDate = new Date(currentYear, 7, 1);
+    const reviewYear = now >= currentYearReviewDate
+        ? currentYear
+        : currentYear - 1;
+
+    return {
+        required: dismissedYear !== reviewYear,
+        reviewDate: `August 1, ${reviewYear}`,
+        reviewYear,
+        dismissedYear: dismissedYear ?? null,
+    };
+}
+
+export function getCurrentAnnualYearReviewYear() {
+    return getAnnualYearReviewState().reviewYear;
+}
+
 export async function getProfile(userId: number) {
     const user = await prisma.users.findUnique({
         where: { user_id: userId },
@@ -161,6 +181,7 @@ export async function getProfile(userId: number) {
         account_status: true,
         created_at: true,
         profile_updated_at: true,
+        annual_year_review_dismissed_year: true,
         years: {
             select: {
             year_id: true,
@@ -236,10 +257,26 @@ export async function getProfile(userId: number) {
         fypIdea: user.ideas,
         profilePicture: user.profile_pic,
         profileCompleted,
+        annualYearReview: getAnnualYearReviewState(
+            user.annual_year_review_dismissed_year
+        ),
         createdAt: user.created_at,
         updatedAt: user.profile_updated_at ?? user.created_at,
         },
     };
+}
+
+export async function dismissAnnualYearReview(userId: number) {
+    const reviewYear = getCurrentAnnualYearReviewYear();
+
+    await prisma.users.update({
+        where: { user_id: userId },
+        data: {
+            annual_year_review_dismissed_year: reviewYear,
+        },
+    });
+
+    return getAnnualYearReviewState(reviewYear);
 }
 
 export async function profileSetup(input: ProfileSetupInput) {

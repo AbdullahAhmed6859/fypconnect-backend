@@ -5,7 +5,8 @@ import {
     getPreferences,
     normalizePreferencesInput,
     savePreferences,
-    getSkillsAndInterests
+    getSkillsAndInterests,
+    dismissAnnualYearReview
 } from "../queries/profile.js";
 import { updateMyProfile } from "../queries/profileUpdate.js";
 import handleResponse from "../utils/handleResponse.js";
@@ -66,6 +67,15 @@ export const updateUserPreferences = async (req: any, res: any) => {
 
         const preferences = await savePreferences(preferencesInput);
         return handleResponse(res, 200, "Preferences updated successfully", preferences);
+    } catch (error: any) {
+        return handleResponse(res, error.statusCode ?? 400, error.message);
+    }
+}
+
+export async function dismissAnnualYearReviewController(req: any, res: any) {
+    try {
+        const result = await dismissAnnualYearReview(Number(req.user.user_id));
+        return handleResponse(res, 200, "Annual year review dismissed", result);
     } catch (error: any) {
         return handleResponse(res, error.statusCode ?? 400, error.message);
     }

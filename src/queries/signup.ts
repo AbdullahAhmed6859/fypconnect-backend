@@ -11,18 +11,20 @@ export async function signup(email: string, password: string) {
     throw new Error("Email must be a valid Habib University email address");
   }
 
-  // console.log("email is valid, proceeding to check if it's already in use");
   const existingUser = await prisma.users.findUnique({
-    where: { email },
+    where: {
+      email,
+      account_status: "active",
+    }, 
+
   });
 
-  // console.log("database query completed, checking if user exists");
 
   if (existingUser) {
-  const err = new Error("An account with this email already exists");
-  (err as any).statusCode = 409;
-  throw err;
-}
+    const err = new Error("An account with this email already exists");
+    (err as any).statusCode = 409;
+    throw err;
+  }
 
   console.log("email is valid and not in use, proceeding to hash password");
   const hashedPassword = await bcrypt.hash(password, 10);

@@ -1,4 +1,4 @@
-import { Prisma } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client";
 import { prisma } from "../db/prisma.js";
 import AppError from "../utils/appError.js";
 

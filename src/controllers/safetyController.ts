@@ -1,6 +1,7 @@
 import {
   blockUser,
   deleteMyAccount,
+  getBlockedUsers,
   normalizeMatchInput,
   normalizeTargetUserInput,
   unblockUser,
@@ -18,6 +19,15 @@ export async function deleteMyAccountController(req: any, res: any) {
     });
 
     return handleResponse(res, 200, "Account deleted successfully", result);
+  } catch (error: any) {
+    return handleResponse(res, error.statusCode ?? 400, error.message);
+  }
+}
+
+export async function getBlockedUsersController(req: any, res: any) {
+  try {
+    const result = await getBlockedUsers(Number(req.user.user_id));
+    return handleResponse(res, 200, "Blocked users retrieved successfully", result);
   } catch (error: any) {
     return handleResponse(res, error.statusCode ?? 400, error.message);
   }

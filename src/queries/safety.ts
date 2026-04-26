@@ -24,6 +24,15 @@ type UnmatchResult = {
   unmatchedAt: Date;
 };
 
+type BlockedUserListItem = {
+  userId: number;
+  fullName: string | null;
+  major: string | null;
+  yearOfStudy: number | null;
+  profilePicture: string | null;
+  blockedAt: Date;
+};
+
 function normalizePositiveInteger(value: unknown, field: string) {
   const parsed = Number(value);
 
@@ -129,6 +138,45 @@ export async function deleteMyAccount(
       systemMessageCount: activeMatches.length,
     };
   });
+}
+
+export async function getBlockedUsers(
+  currentUserId: number
+): Promise<BlockedUserListItem[]> {
+  await assertActiveUserExists(prisma, currentUserId, "Current user not found");
+
+  const blockedUsers = await prisma.blocked_users.findMany({
+    where: { blocker_id: currentUserId },
+    orderBy: { block_id: "desc" },
+    select: {
+      blocked_id: true,
+      users_blocked_users_blocked_idTousers: {
+        select: {
+          full_name: true,
+          profile_pic: true,
+          majors: {
+            select: {
+              majors: true,
+            },
+          },
+          years: {
+            select: {
+              year: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return blockedUsers.map((entry) => ({
+    userId: entry.blocked_id,
+    fullName: entry.users_blocked_users_blocked_idTousers.full_name,
+    major: entry.users_blocked_users_blocked_idTousers.majors?.majors ?? null,
+    yearOfStudy: entry.users_blocked_users_blocked_idTousers.years?.year ?? null,
+    profilePicture: entry.users_blocked_users_blocked_idTousers.profile_pic ?? null,
+    blockedAt: new Date(),
+  }));
 }
 
 export async function blockUser(

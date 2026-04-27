@@ -89,6 +89,7 @@ CREATE TABLE Users (
     biography                 TEXT,
     ideas                     TEXT,
     profile_updated_at        TIMESTAMP WITH TIME ZONE,
+    profile_completed_at      TIMESTAMP WITH TIME ZONE,
     annual_year_review_dismissed_year INTEGER,
     account_status            account_status_enum     NOT NULL DEFAULT 'pending',
     deletion_time             TIMESTAMP WITH TIME ZONE,

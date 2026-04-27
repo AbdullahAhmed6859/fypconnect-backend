@@ -6,6 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model auth_logs {
@@ -180,6 +181,7 @@ model users {
   biography                                     String?
   ideas                                         String?
   profile_updated_at                            DateTime?               @db.Timestamptz(6)
+  profile_completed_at                          DateTime?               @db.Timestamptz(6)
   annual_year_review_dismissed_year             Int?
   account_status                                account_status_enum     @default(pending)
   deletion_time                                 DateTime?               @db.Timestamptz(6)

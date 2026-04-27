@@ -149,16 +149,23 @@ async function getYearValueById(
     return yearRecord?.year ?? null;
 }
 
-function getAnnualYearReviewState(dismissedYear?: number | null) {
+function getAnnualYearReviewState(
+    profileCompletedAt?: Date | null,
+    dismissedYear?: number | null
+) {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentYearReviewDate = new Date(currentYear, 7, 1);
     const reviewYear = now >= currentYearReviewDate
         ? currentYear
         : currentYear - 1;
+    const reviewDate = new Date(reviewYear, 7, 1);
+    const reviewHasPassedSinceSetup = profileCompletedAt
+        ? reviewDate > profileCompletedAt
+        : false;
 
     return {
-        required: dismissedYear !== reviewYear,
+        required: reviewHasPassedSinceSetup && dismissedYear !== reviewYear,
         reviewDate: `August 1, ${reviewYear}`,
         reviewYear,
         dismissedYear: dismissedYear ?? null,
@@ -166,7 +173,7 @@ function getAnnualYearReviewState(dismissedYear?: number | null) {
 }
 
 export function getCurrentAnnualYearReviewYear() {
-    return getAnnualYearReviewState().reviewYear;
+    return getAnnualYearReviewState(null).reviewYear;
 }
 
 export async function getProfile(userId: number) {
@@ -181,6 +188,7 @@ export async function getProfile(userId: number) {
         account_status: true,
         created_at: true,
         profile_updated_at: true,
+        profile_completed_at: true,
         annual_year_review_dismissed_year: true,
         years: {
             select: {
@@ -258,9 +266,11 @@ export async function getProfile(userId: number) {
         profilePicture: user.profile_pic,
         profileCompleted,
         annualYearReview: getAnnualYearReviewState(
+            user.profile_completed_at ?? user.profile_updated_at ?? user.created_at,
             user.annual_year_review_dismissed_year
         ),
         createdAt: user.created_at,
+        profileCompletedAt: user.profile_completed_at ?? null,
         updatedAt: user.profile_updated_at ?? user.created_at,
         },
     };
@@ -276,7 +286,7 @@ export async function dismissAnnualYearReview(userId: number) {
         },
     });
 
-    return getAnnualYearReviewState(reviewYear);
+    return getAnnualYearReviewState(null, reviewYear);
 }
 
 export async function profileSetup(input: ProfileSetupInput) {
@@ -320,6 +330,8 @@ export async function profileSetup(input: ProfileSetupInput) {
         throw new Error("Profile setup already completed");
         }
 
+        const now = new Date();
+
         await tx.users.update({
         where: { user_id: userId },
         data: {
@@ -330,7 +342,8 @@ export async function profileSetup(input: ProfileSetupInput) {
             biography: bio,
             ideas: fypIdea,
             account_status: account_status_enum.active,
-            profile_updated_at: new Date(),
+            profile_updated_at: now,
+            profile_completed_at: now,
         },
         });
 

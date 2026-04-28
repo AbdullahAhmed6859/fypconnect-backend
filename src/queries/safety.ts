@@ -184,7 +184,7 @@ export async function blockUser(
   targetUserId: number
 ): Promise<BlockUserResult> {
   if (currentUserId === targetUserId) {
-    throw new AppError("You cannot block your own account", 409);
+    throw new AppError("You cannot restrict your own account", 409);
   }
 
   return prisma.$transaction(async (tx) => {
@@ -208,7 +208,7 @@ export async function blockUser(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new AppError("User already blocked", 409);
+        throw new AppError("User already restricted", 409);
       }
 
       throw error;
@@ -226,20 +226,28 @@ export async function blockUser(
     });
 
     if (match) {
-      await tx.matches.update({
+      await tx.matches.delete({
         where: { match_id: match.match_id },
-        data: { status: "blocked" },
-      });
-
-      await tx.messages.create({
-        data: {
-          match_id: match.match_id,
-          sender_id: null,
-          message: "This chat is no longer active because a user was blocked.",
-          unread: true,
-        },
       });
     }
+
+    await tx.likes.deleteMany({
+      where: {
+        OR: [
+          { liker_id: currentUserId, liked_id: targetUserId },
+          { liker_id: targetUserId, liked_id: currentUserId },
+        ],
+      },
+    });
+
+    await tx.passes.deleteMany({
+      where: {
+        OR: [
+          { passer_id: currentUserId, passed_id: targetUserId },
+          { passer_id: targetUserId, passed_id: currentUserId },
+        ],
+      },
+    });
 
     return {
       blockedUserId: block.blocked_id,
@@ -254,14 +262,46 @@ export async function unblockUser(
   targetUserId: number
 ): Promise<UnblockUserResult> {
   if (currentUserId === targetUserId) {
-    throw new AppError("You cannot unblock your own account", 409);
+    throw new AppError("You cannot unrestrict your own account", 409);
   }
 
-  const deleted = await prisma.blocked_users.deleteMany({
-    where: {
-      blocker_id: currentUserId,
-      blocked_id: targetUserId,
-    },
+  const deleted = await prisma.$transaction(async (tx) => {
+    const removed = await tx.blocked_users.deleteMany({
+      where: {
+        blocker_id: currentUserId,
+        blocked_id: targetUserId,
+      },
+    });
+
+    await tx.matches.deleteMany({
+      where: {
+        status: "blocked",
+        OR: [
+          { user1_id: currentUserId, user2_id: targetUserId },
+          { user1_id: targetUserId, user2_id: currentUserId },
+        ],
+      },
+    });
+
+    await tx.likes.deleteMany({
+      where: {
+        OR: [
+          { liker_id: currentUserId, liked_id: targetUserId },
+          { liker_id: targetUserId, liked_id: currentUserId },
+        ],
+      },
+    });
+
+    await tx.passes.deleteMany({
+      where: {
+        OR: [
+          { passer_id: currentUserId, passed_id: targetUserId },
+          { passer_id: targetUserId, passed_id: currentUserId },
+        ],
+      },
+    });
+
+    return removed;
   });
 
   return {

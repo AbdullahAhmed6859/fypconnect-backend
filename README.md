@@ -99,14 +99,14 @@ All main routes are mounted under `/api/v1`.
 /browse     Like or pass on another user
 /matches    Active matches and updated match profile notifications
 /chat       Conversation history and sending messages
-/safety     Block, unblock, unmatch, list blocked users, delete account
+/safety     Restrict, unrestrict, end matches, list restricted users, delete account
 ```
 
 Protected routes use the `protect` middleware, so they require a valid authenticated session.
 
 ## Database Notes
 
-The Prisma schema models users, majors, years, skills, interests, profile preferences, likes, passes, matches, messages, notifications, and blocked users. In practical terms:
+The Prisma schema models users, majors, years, skills, interests, profile preferences, likes, passes, matches, messages, notifications, and restricted users. In practical terms:
 
 - a user must verify their email before becoming active;
 - a completed profile is needed before browsing/matching;

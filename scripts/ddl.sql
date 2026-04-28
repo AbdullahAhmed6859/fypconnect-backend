@@ -193,7 +193,7 @@ CREATE TABLE Passes (
 
 -- A match is created atomically when two users mutually like each other (FR-12).
 -- UNIQUE(user1_id, user2_id) prevents duplicate match records per pair.
--- status defaults to 'active'; set to 'unmatched' or 'blocked' by account-control endpoints.
+-- status defaults to 'active'; permanent end-match actions set it to 'unmatched'.
 CREATE TABLE Matches (
     match_id   SERIAL              PRIMARY KEY,
     user1_id   INTEGER             NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
@@ -225,12 +225,13 @@ CREATE TABLE Messages (
 
 
 -- ============================================================
---  BLOCKED USERS
+--  RESTRICTED USERS
 -- ============================================================
 
--- Block is match-scoped: accessed from within an existing match/chat context (FR-18).
--- Applying a block also unmatches the pair and prevents any future rematching.
--- UNIQUE(blocker_id, blocked_id) prevents duplicate block records.
+-- Restrict is match-scoped: accessed from within an existing match/chat context (FR-18).
+-- Applying a restriction deletes the active match and chat history. Removing the
+-- restriction lets both users encounter each other again through browsing.
+-- UNIQUE(blocker_id, blocked_id) prevents duplicate restriction records.
 CREATE TABLE Blocked_Users (
     block_id   SERIAL    PRIMARY KEY,
     blocker_id INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,

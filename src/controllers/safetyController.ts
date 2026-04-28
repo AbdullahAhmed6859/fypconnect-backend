@@ -27,7 +27,7 @@ export async function deleteMyAccountController(req: any, res: any) {
 export async function getBlockedUsersController(req: any, res: any) {
   try {
     const result = await getBlockedUsers(Number(req.user.user_id));
-    return handleResponse(res, 200, "Blocked users retrieved successfully", result);
+    return handleResponse(res, 200, "Restricted users retrieved successfully", result);
   } catch (error: any) {
     return handleResponse(res, error.statusCode ?? 400, error.message);
   }
@@ -38,7 +38,7 @@ export async function blockUserController(req: any, res: any) {
     const input = normalizeTargetUserInput(req.body ?? {});
     const result = await blockUser(Number(req.user.user_id), input.targetUserId);
 
-    return handleResponse(res, 200, "User blocked successfully", result);
+    return handleResponse(res, 200, "User restricted successfully", result);
   } catch (error: any) {
     return handleResponse(res, error.statusCode ?? 400, error.message);
   }
@@ -49,7 +49,7 @@ export async function unblockUserController(req: any, res: any) {
     const input = normalizeTargetUserInput(req.body ?? {});
     const result = await unblockUser(Number(req.user.user_id), input.targetUserId);
 
-    return handleResponse(res, 200, "User unblocked successfully", result);
+    return handleResponse(res, 200, "User unrestricted successfully", result);
   } catch (error: any) {
     return handleResponse(res, error.statusCode ?? 400, error.message);
   }

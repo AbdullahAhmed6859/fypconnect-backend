@@ -3,6 +3,9 @@ process.env.DATABASE_URL ??= "postgresql://user:pass@localhost:5432/fypconnect_t
 jest.mock("../../../src/db/prisma.js", () => ({
   prisma: {
     $transaction: jest.fn(),
+    years: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -11,6 +14,9 @@ import { profileSetup } from "../../../src/queries/profile";
 
 describe("profile setup", () => {
   const transactionMock = prisma.$transaction as jest.MockedFunction<typeof prisma.$transaction>;
+  const yearFindUniqueMock = prisma.years.findUnique as jest.MockedFunction<
+    typeof prisma.years.findUnique
+  >;
 
   test("marks a junior or senior as eligible for browsing", async () => {
     const tx: any = {
@@ -30,11 +36,9 @@ describe("profile setup", () => {
       major_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       skills_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       interests_preferences: { createMany: jest.fn().mockResolvedValue({}) },
-      years: {
-        findUnique: jest.fn().mockResolvedValue({ year: 3 }),
-      },
     };
 
+    yearFindUniqueMock.mockResolvedValue({ year: 3 } as never);
     transactionMock.mockImplementation(async (callback: any) => callback(tx));
 
     const result = await profileSetup({
@@ -67,11 +71,9 @@ describe("profile setup", () => {
       major_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       skills_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       interests_preferences: { createMany: jest.fn().mockResolvedValue({}) },
-      years: {
-        findUnique: jest.fn().mockResolvedValue({ year: 2 }),
-      },
     };
 
+    yearFindUniqueMock.mockResolvedValue({ year: 2 } as never);
     transactionMock.mockImplementation(async (callback: any) => callback(tx));
 
     const result = await profileSetup({
@@ -106,11 +108,9 @@ describe("profile setup", () => {
       major_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       skills_preferences: { createMany: jest.fn().mockResolvedValue({}) },
       interests_preferences: { createMany: jest.fn().mockResolvedValue({}) },
-      years: {
-        findUnique: jest.fn().mockResolvedValue({ year: 3 }),
-      },
     };
 
+    yearFindUniqueMock.mockResolvedValue({ year: 3 } as never);
     transactionMock.mockImplementation(async (callback: any) => callback(tx));
 
     await expect(

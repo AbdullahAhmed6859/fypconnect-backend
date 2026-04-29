@@ -137,11 +137,8 @@ function isNullish(value: unknown) {
     return value === undefined || value === null;
 }
 
-async function getYearValueById(
-    tx: Prisma.TransactionClient,
-    yearId: number
-    ): Promise<number | null> {
-    const yearRecord = await tx.years.findUnique({
+async function getYearValueById(yearId: number): Promise<number | null> {
+    const yearRecord = await prisma.years.findUnique({
         where: { year_id: yearId },
         select: { year: true },
     });
@@ -307,6 +304,10 @@ export async function profileSetup(input: ProfileSetupInput) {
         profilePicture = null,
     } = input;
 
+    const yearValue = await getYearValueById(yearId);
+    const eligibleForBrowsing =
+        yearValue !== null ? yearValue >= 3 : false;
+
     return prisma.$transaction(async (tx) => {
         const existingUser = await tx.users.findUnique({
         where: { user_id: userId },
@@ -409,20 +410,15 @@ export async function profileSetup(input: ProfileSetupInput) {
         });
         }
 
-        const profileId = userId;
-        const yearValue = await getYearValueById(tx, yearId);
-        const eligibleForBrowsing =
-        yearValue !== null ? yearValue >= 3 : false;
-
         return {
         message: "Profile setup completed successfully",
         data: {
-            profileId,
+            profileId: userId,
             profileCompleted: true,
             eligibleForBrowsing,
         },
         };
-    });
+    }, { timeout: 15000 });
 }
 
 export async function getPreferences(userId: number) {

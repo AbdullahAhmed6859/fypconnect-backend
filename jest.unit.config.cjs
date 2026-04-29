@@ -6,7 +6,7 @@ module.exports = {
   restoreMocks: true,
   moduleFileExtensions: ["ts", "js", "json"],
   transform: {
-  "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.json" }]
+  "^.+\\.ts$": ["ts-jest", { tsconfig: "<rootDir>/tests/tsconfig.json" }]
 },
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",

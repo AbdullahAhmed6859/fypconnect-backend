@@ -24,9 +24,11 @@ describe("browse feed rules", () => {
 
   test("applies self, liked, passed, and blocked exclusions", async () => {
     findUniqueMock.mockResolvedValue({
-      major: 1,
-      user_skills: [],
+      year: 3,
+      user_skills: [{ skill_id: 1 }],
       user_interests: [],
+      skills_preferences: [{ preferred_skill_id: 1 }],
+      interests_preferences: [],
     } as never);
     findManyMock.mockResolvedValue([] as never);
 

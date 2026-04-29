@@ -5,7 +5,7 @@ process.env.DATABASE_URL ??= "postgresql://user:pass@localhost:5432/fypconnect_t
 jest.mock("../../../src/db/prisma", () => ({
   prisma: {
     users: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
   },
@@ -26,8 +26,8 @@ describe("email verification queries", () => {
   const mockedSendVerificationEmail = sendVerificationEmail as jest.MockedFunction<
     typeof sendVerificationEmail
   >;
-  const findUniqueMock = prisma.users.findUnique as jest.MockedFunction<
-    typeof prisma.users.findUnique
+  const findFirstMock = prisma.users.findFirst as jest.MockedFunction<
+    typeof prisma.users.findFirst
   >;
   const updateMock = prisma.users.update as jest.MockedFunction<typeof prisma.users.update>;
 
@@ -35,7 +35,7 @@ describe("email verification queries", () => {
     const rawToken = "123456";
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
 
-    findUniqueMock.mockResolvedValue({
+    findFirstMock.mockResolvedValue({
       user_id: 44,
       email: "student@st.habib.edu.pk",
       verified: false,
@@ -50,7 +50,7 @@ describe("email verification queries", () => {
   });
 
   test("enforces the resend-verification rate limit", async () => {
-    findUniqueMock.mockResolvedValue({
+    findFirstMock.mockResolvedValue({
       user_id: 55,
       email: "student@st.habib.edu.pk",
       verified: false,

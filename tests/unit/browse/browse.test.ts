@@ -11,17 +11,30 @@ import { likeProfile, passProfile } from "../../../src/queries/browse";
 
 describe("browse actions", () => {
   const transactionMock = prisma.$transaction as jest.MockedFunction<typeof prisma.$transaction>;
+  const currentUser = {
+    user_id: 1,
+    account_status: "active",
+    year: 3,
+    skills_preferences: [{ preferred_skill_id: 1 }],
+    interests_preferences: [],
+  };
+  const targetUser = {
+    user_id: 2,
+    account_status: "active",
+    full_name: "Target User",
+    year: 3,
+    major: 1,
+    user_skills: [{ skill_id: 1 }],
+    user_interests: [],
+  };
 
   test("rejects a duplicate like", async () => {
     const tx: any = {
       users: {
-        findUnique: jest.fn().mockResolvedValue({
-          user_id: 2,
-          account_status: "active",
-          full_name: "Target User",
-          year: 3,
-          major: 1,
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(currentUser)
+          .mockResolvedValueOnce(targetUser),
       },
       blocked_users: { findFirst: jest.fn().mockResolvedValue(null) },
       matches: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -40,13 +53,10 @@ describe("browse actions", () => {
   test("rejects a duplicate pass", async () => {
     const tx: any = {
       users: {
-        findUnique: jest.fn().mockResolvedValue({
-          user_id: 2,
-          account_status: "active",
-          full_name: "Target User",
-          year: 3,
-          major: 1,
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(currentUser)
+          .mockResolvedValueOnce(targetUser),
       },
       blocked_users: { findFirst: jest.fn().mockResolvedValue(null) },
       matches: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -65,13 +75,10 @@ describe("browse actions", () => {
   test("creates a mutual match atomically", async () => {
     const tx: any = {
       users: {
-        findUnique: jest.fn().mockResolvedValue({
-          user_id: 2,
-          account_status: "active",
-          full_name: "Target User",
-          year: 3,
-          major: 1,
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(currentUser)
+          .mockResolvedValueOnce(targetUser),
       },
       blocked_users: { findFirst: jest.fn().mockResolvedValue(null) },
       matches: {

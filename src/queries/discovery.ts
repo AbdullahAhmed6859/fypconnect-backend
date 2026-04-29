@@ -132,8 +132,8 @@ export async function getDiscoveryProfiles(
   filters: DiscoveryFilters
 ): Promise<DiscoveryProfile[]> {
   const { currentUserId, limit } = filters;
-  const skillIds: number[] = [];
-  const interestIds: number[] = [];
+  const skillIds = filters.skillIds ?? [];
+  const interestIds = filters.interestIds ?? [];
 
   await Promise.all([
     assertSkillIdsExist(skillIds),

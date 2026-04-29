@@ -12,17 +12,30 @@ import { blockUser, deleteMyAccount, unmatchUser } from "../../../src/queries/sa
 
 describe("rollback-sensitive operations", () => {
   const transactionMock = prisma.$transaction as jest.MockedFunction<typeof prisma.$transaction>;
+  const currentBrowseUser = {
+    user_id: 1,
+    account_status: "active",
+    year: 3,
+    skills_preferences: [{ preferred_skill_id: 1 }],
+    interests_preferences: [],
+  };
+  const targetBrowseUser = {
+    user_id: 2,
+    account_status: "active",
+    full_name: "Target User",
+    year: 3,
+    major: 1,
+    user_skills: [{ skill_id: 1 }],
+    user_interests: [],
+  };
 
   test("stops mutual match creation if a later step fails", async () => {
     const tx: any = {
       users: {
-        findUnique: jest.fn().mockResolvedValue({
-          user_id: 2,
-          account_status: "active",
-          full_name: "Target User",
-          year: 3,
-          major: 1,
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(currentBrowseUser)
+          .mockResolvedValueOnce(targetBrowseUser),
       },
       blocked_users: { findFirst: jest.fn().mockResolvedValue(null) },
       matches: {
@@ -55,28 +68,41 @@ describe("rollback-sensitive operations", () => {
   test("stops block if a later transaction step fails", async () => {
     const tx: any = {
       users: {
-        findUnique: jest.fn().mockResolvedValue({
-          user_id: 1,
-          account_status: "active",
-        }),
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({
+            user_id: 1,
+            email: "current@st.habib.edu.pk",
+            account_status: "active",
+          })
+          .mockResolvedValueOnce({
+            user_id: 2,
+            email: "target@st.habib.edu.pk",
+            account_status: "active",
+          }),
       },
       blocked_users: {
         create: jest.fn().mockResolvedValue({
           blocked_id: 2,
+          blocked_email: "target@st.habib.edu.pk",
+          created_at: new Date(),
         }),
       },
       matches: {
         findFirst: jest.fn().mockResolvedValue({ match_id: 9 }),
-        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
       },
-      messages: {
-        create: jest.fn().mockRejectedValue(new Error("message failed")),
+      likes: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      passes: {
+        deleteMany: jest.fn().mockRejectedValue(new Error("passes cleanup failed")),
       },
     };
 
     transactionMock.mockImplementation(async (callback: any) => callback(tx));
 
-    await expect(blockUser(1, 2)).rejects.toThrow("message failed");
+    await expect(blockUser(1, 2)).rejects.toThrow("passes cleanup failed");
   });
 
   test("stops unmatch if a later transaction step fails", async () => {

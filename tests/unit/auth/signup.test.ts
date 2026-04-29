@@ -3,7 +3,7 @@ process.env.DATABASE_URL ??= "postgresql://user:pass@localhost:5432/fypconnect_t
 jest.mock("../../../src/db/prisma", () => ({
   prisma: {
     users: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
   },
@@ -23,8 +23,8 @@ import { buildVerificationToken } from "../../../src/queries/emailVerification";
 import { signup } from "../../../src/queries/signup";
 
 describe("signup query", () => {
-  const findUniqueMock = prisma.users.findUnique as jest.MockedFunction<
-    typeof prisma.users.findUnique
+  const findFirstMock = prisma.users.findFirst as jest.MockedFunction<
+    typeof prisma.users.findFirst
   >;
 
   test("rejects a non-HU email domain", async () => {
@@ -34,7 +34,7 @@ describe("signup query", () => {
   });
 
   test("rejects a duplicate email", async () => {
-    findUniqueMock.mockResolvedValue({ user_id: 1 } as never);
+    findFirstMock.mockResolvedValue({ user_id: 1 } as never);
 
     await expect(signup("student@st.habib.edu.pk", "secret123")).rejects.toMatchObject({
       message: "An account with this email already exists",

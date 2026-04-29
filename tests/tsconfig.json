@@ -2,6 +2,7 @@
   "compilerOptions": {
     "moduleResolution": "Node",
     "strict": false,
+    "types": ["jest", "node"],
     "ignoreDeprecations": "6.0"
   },
   "include": ["../src", "./**/*.ts"]

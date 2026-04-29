@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "nodemon -L --watch src --ext ts --exec tsx src/app.ts"
+    "dev": "nodemon -L --watch src --ext ts --exec tsx src/app.ts",
+    "test": "jest --config jest.unit.config.cjs"
   },
   "keywords": [],
   "author": "",
@@ -33,15 +34,18 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",
     "@types/node": "^25.5.2",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.11",
     "@types/pino": "^7.0.4",
     "dotenv": "^17.4.0",
+    "jest": "^30.3.0",
     "nodemon": "^3.1.14",
     "prisma": "^7.8.0",
+    "ts-jest": "^29.4.9",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   }
 }

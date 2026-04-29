@@ -16,8 +16,14 @@ export async function verifyEmailToken(email: string, token: string) {
   if (!email || !token) {
     throw new Error("Email and verification token are required");
   }
-  const user = await prisma.users.findUnique({
-    where: { email },
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await prisma.users.findFirst({
+    where: {
+      email: normalizedEmail,
+      account_status: { not: "deleted" },
+    },
   });
 
   if (!user) {
@@ -59,8 +65,13 @@ export async function resendVerificationEmailForUser(email: string) {
     throw new Error("Email is required");
   }
 
-  const user = await prisma.users.findUnique({
-    where: { email },
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await prisma.users.findFirst({
+    where: {
+      email: normalizedEmail,
+      account_status: { not: "deleted" },
+    },
   });
 
   if (!user) {

@@ -11,6 +11,7 @@ type DeleteAccountResult = {
 type BlockUserResult = {
   blockedUserId: number;
   blockedAt: Date;
+  blockedEmail: string;
   disabledMatchId: number | null;
 };
 
@@ -49,6 +50,10 @@ function getCanonicalMatchPair(userA: number, userB: number) {
     : { user1_id: userB, user2_id: userA };
 }
 
+function normalizeEmailIdentity(email: string) {
+  return email.trim().toLowerCase();
+}
+
 async function assertActiveUserExists(
   tx: Prisma.TransactionClient,
   userId: number,
@@ -56,7 +61,7 @@ async function assertActiveUserExists(
 ) {
   const user = await tx.users.findUnique({
     where: { user_id: userId },
-    select: { user_id: true, account_status: true },
+    select: { user_id: true, email: true, account_status: true },
   });
 
   if (!user || user.account_status !== "active") {
@@ -189,7 +194,12 @@ export async function blockUser(
 
   return prisma.$transaction(async (tx) => {
     await assertActiveUserExists(tx, currentUserId, "Current user not found");
-    await assertActiveUserExists(tx, targetUserId, "Target user not found");
+    const targetUser = await assertActiveUserExists(
+      tx,
+      targetUserId,
+      "Target user not found"
+    );
+    const blockedAt = new Date();
 
     let block;
 
@@ -198,9 +208,13 @@ export async function blockUser(
         data: {
           blocker_id: currentUserId,
           blocked_id: targetUserId,
+          blocked_email: normalizeEmailIdentity(targetUser.email),
+          created_at: blockedAt,
         },
         select: {
           blocked_id: true,
+          blocked_email: true,
+          created_at: true,
         },
       });
     } catch (error) {
@@ -251,7 +265,8 @@ export async function blockUser(
 
     return {
       blockedUserId: block.blocked_id,
-      blockedAt: new Date(),
+      blockedAt: block.created_at,
+      blockedEmail: block.blocked_email,
       disabledMatchId: match?.match_id ?? null,
     };
   });

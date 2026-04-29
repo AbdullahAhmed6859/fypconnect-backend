@@ -31,6 +31,10 @@ function getCanonicalMatchPair(userA: number, userB: number) {
     : { user1_id: userB, user2_id: userA };
 }
 
+function hasAnyOverlap(left: number[], right: number[]) {
+  return left.some((value) => right.includes(value));
+}
+
 export function normalizeLikeProfileInput(
   currentUserId: number,
   payload: Record<string, unknown>
@@ -60,16 +64,42 @@ export async function likeProfile(
   }
 
   return prisma.$transaction(async (tx) => {
-    const targetUser = await tx.users.findUnique({
-      where: { user_id: targetUserId },
-      select: {
-        user_id: true,
-        account_status: true,
-        full_name: true,
-        year: true,
-        major: true,
-      },
-    });
+    const [currentUser, targetUser] = await Promise.all([
+      tx.users.findUnique({
+        where: { user_id: currentUserId },
+        select: {
+          user_id: true,
+          account_status: true,
+          year: true,
+          skills_preferences: {
+            select: { preferred_skill_id: true },
+          },
+          interests_preferences: {
+            select: { preferred_interest_id: true },
+          },
+        },
+      }),
+      tx.users.findUnique({
+        where: { user_id: targetUserId },
+        select: {
+          user_id: true,
+          account_status: true,
+          full_name: true,
+          year: true,
+          major: true,
+          user_skills: {
+            select: { skill_id: true },
+          },
+          user_interests: {
+            select: { interest_id: true },
+          },
+        },
+      }),
+    ]);
+
+    if (!currentUser || currentUser.account_status !== "active") {
+      throw new AppError("Current user not found", 404);
+    }
 
     if (!targetUser || targetUser.account_status !== "active") {
       throw new AppError("Target user not found", 404);
@@ -80,6 +110,30 @@ export async function likeProfile(
     );
 
     if (!targetProfileComplete) {
+      throw new AppError("Target profile is not available for browsing", 409);
+    }
+
+    if (!currentUser.year || currentUser.year !== targetUser.year) {
+      throw new AppError("Target profile is not available for browsing", 409);
+    }
+
+    const preferredSkillIds = currentUser.skills_preferences.map(
+      (item) => item.preferred_skill_id
+    );
+    const preferredInterestIds = currentUser.interests_preferences.map(
+      (item) => item.preferred_interest_id
+    );
+    const targetSkillIds = targetUser.user_skills.map((item) => item.skill_id);
+    const targetInterestIds = targetUser.user_interests.map(
+      (item) => item.interest_id
+    );
+    const matchesPreferredSkill = hasAnyOverlap(preferredSkillIds, targetSkillIds);
+    const matchesPreferredInterest = hasAnyOverlap(
+      preferredInterestIds,
+      targetInterestIds
+    );
+
+    if (!matchesPreferredSkill && !matchesPreferredInterest) {
       throw new AppError("Target profile is not available for browsing", 409);
     }
 
@@ -232,16 +286,42 @@ export async function passProfile(
   }
 
   return prisma.$transaction(async (tx) => {
-    const targetUser = await tx.users.findUnique({
-      where: { user_id: targetUserId },
-      select: {
-        user_id: true,
-        account_status: true,
-        full_name: true,
-        year: true,
-        major: true,
-      },
-    });
+    const [currentUser, targetUser] = await Promise.all([
+      tx.users.findUnique({
+        where: { user_id: currentUserId },
+        select: {
+          user_id: true,
+          account_status: true,
+          year: true,
+          skills_preferences: {
+            select: { preferred_skill_id: true },
+          },
+          interests_preferences: {
+            select: { preferred_interest_id: true },
+          },
+        },
+      }),
+      tx.users.findUnique({
+        where: { user_id: targetUserId },
+        select: {
+          user_id: true,
+          account_status: true,
+          full_name: true,
+          year: true,
+          major: true,
+          user_skills: {
+            select: { skill_id: true },
+          },
+          user_interests: {
+            select: { interest_id: true },
+          },
+        },
+      }),
+    ]);
+
+    if (!currentUser || currentUser.account_status !== "active") {
+      throw new AppError("Current user not found", 404);
+    }
 
     if (!targetUser || targetUser.account_status !== "active") {
       throw new AppError("Target user not found", 404);
@@ -252,6 +332,30 @@ export async function passProfile(
     );
 
     if (!targetProfileComplete) {
+      throw new AppError("Target profile is not available for browsing", 409);
+    }
+
+    if (!currentUser.year || currentUser.year !== targetUser.year) {
+      throw new AppError("Target profile is not available for browsing", 409);
+    }
+
+    const preferredSkillIds = currentUser.skills_preferences.map(
+      (item) => item.preferred_skill_id
+    );
+    const preferredInterestIds = currentUser.interests_preferences.map(
+      (item) => item.preferred_interest_id
+    );
+    const targetSkillIds = targetUser.user_skills.map((item) => item.skill_id);
+    const targetInterestIds = targetUser.user_interests.map(
+      (item) => item.interest_id
+    );
+    const matchesPreferredSkill = hasAnyOverlap(preferredSkillIds, targetSkillIds);
+    const matchesPreferredInterest = hasAnyOverlap(
+      preferredInterestIds,
+      targetInterestIds
+    );
+
+    if (!matchesPreferredSkill && !matchesPreferredInterest) {
       throw new AppError("Target profile is not available for browsing", 409);
     }
 

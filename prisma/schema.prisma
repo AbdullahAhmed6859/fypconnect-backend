@@ -21,10 +21,13 @@ model blocked_users {
   block_id                              Int   @id @default(autoincrement())
   blocker_id                            Int
   blocked_id                            Int
+  blocked_email                         String @db.VarChar
+  created_at                            DateTime @default(now()) @db.Timestamptz(6)
   users_blocked_users_blocked_idTousers users @relation("blocked_users_blocked_idTousers", fields: [blocked_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
   users_blocked_users_blocker_idTousers users @relation("blocked_users_blocker_idTousers", fields: [blocker_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([blocker_id, blocked_id])
+  @@unique([blocker_id, blocked_email])
 }
 
 model interests {
@@ -166,7 +169,7 @@ model user_skills {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
   user_id                                       Int                     @id @default(autoincrement())
-  email                                         String                  @unique @db.VarChar
+  email                                         String                  @db.VarChar
   password_hash                                 String                  @db.VarChar
   verified                                      Boolean                 @default(false)
   verification_token                            String?                 @db.VarChar

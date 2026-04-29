@@ -7,20 +7,25 @@ export async function login(email: string, password: unknown) {
     throw new Error("Email and password are required");
   }
 
-  const user = await prisma.users.findUnique({
-    where: { email },
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = await prisma.users.findFirst({
+    where: {
+      email: normalizedEmail,
+      account_status: { not: "deleted" },
+    },
   });
 
   if (!user) {
   await prisma.auth_logs.create({
-    data: { user_id: null, email_attempted: email, success: false },
+    data: { user_id: null, email_attempted: normalizedEmail, success: false },
   });
   throw new Error("Invalid email or password");
 }
 const isMatch = await bcrypt.compare(password, user.password_hash);
 if (!isMatch) {
   await prisma.auth_logs.create({
-    data: { user_id: user.user_id, email_attempted: email, success: false },
+    data: { user_id: user.user_id, email_attempted: normalizedEmail, success: false },
   });
   throw new Error("Invalid email or password");
 }
@@ -31,7 +36,7 @@ if (!user.verified) {
 }
 
 await prisma.auth_logs.create({
-  data: { user_id: user.user_id, email_attempted: email, success: true },
+  data: { user_id: user.user_id, email_attempted: normalizedEmail, success: true },
 });
   return user;
 }

@@ -25,27 +25,20 @@ type DiscoveryProfile = {
   links: Record<string, string>;
 };
 
-type CurrentUserBrowseAttributes = {
-  majorId: number | null;
-  skillIds: number[];
-  interestIds: number[];
-};
-
 function hasAnyOverlap(left: number[], right: number[]) {
   return left.some((value) => right.includes(value));
 }
 
 function candidateCanSeeCurrentUser(
-  currentUser: CurrentUserBrowseAttributes,
+  currentUser: {
+    skillIds: number[];
+    interestIds: number[];
+  },
   candidate: {
-    major_preferences: Array<{ preferred_major_id: number }>;
     skills_preferences: Array<{ preferred_skill_id: number }>;
     interests_preferences: Array<{ preferred_interest_id: number }>;
   }
 ) {
-  const preferredMajorIds = candidate.major_preferences.map(
-    (item) => item.preferred_major_id
-  );
   const preferredSkillIds = candidate.skills_preferences.map(
     (item) => item.preferred_skill_id
   );
@@ -53,22 +46,10 @@ function candidateCanSeeCurrentUser(
     (item) => item.preferred_interest_id
   );
 
-  const matchesMajor =
-    preferredMajorIds.length === 0
-      ? true
-      : currentUser.majorId !== null && preferredMajorIds.includes(currentUser.majorId);
-
-  const matchesSkills =
-    preferredSkillIds.length === 0
-      ? true
-      : hasAnyOverlap(currentUser.skillIds, preferredSkillIds);
-
-  const matchesInterests =
-    preferredInterestIds.length === 0
-      ? true
-      : hasAnyOverlap(currentUser.interestIds, preferredInterestIds);
-
-  return matchesMajor && matchesSkills && matchesInterests;
+  return (
+    hasAnyOverlap(currentUser.skillIds, preferredSkillIds) ||
+    hasAnyOverlap(currentUser.interestIds, preferredInterestIds)
+  );
 }
 
 function parsePositiveInteger(value: string, field: string) {
@@ -150,7 +131,9 @@ export function normalizeDiscoveryFilters(
 export async function getDiscoveryProfiles(
   filters: DiscoveryFilters
 ): Promise<DiscoveryProfile[]> {
-  const { currentUserId, skillIds = [], interestIds = [], limit } = filters;
+  const { currentUserId, limit } = filters;
+  const skillIds: number[] = [];
+  const interestIds: number[] = [];
 
   await Promise.all([
     assertSkillIdsExist(skillIds),
@@ -160,7 +143,7 @@ export async function getDiscoveryProfiles(
   const currentUser = await prisma.users.findUnique({
     where: { user_id: currentUserId },
     select: {
-      major: true,
+      year: true,
       user_skills: {
         select: {
           skill_id: true,
@@ -171,6 +154,16 @@ export async function getDiscoveryProfiles(
           interest_id: true,
         },
       },
+      skills_preferences: {
+        select: {
+          preferred_skill_id: true,
+        },
+      },
+      interests_preferences: {
+        select: {
+          preferred_interest_id: true,
+        },
+      },
     },
   });
 
@@ -178,8 +171,22 @@ export async function getDiscoveryProfiles(
     throw new AppError("User not found", 404);
   }
 
-  const currentUserBrowseAttributes: CurrentUserBrowseAttributes = {
-    majorId: currentUser.major ?? null,
+  if (!currentUser.year) {
+    throw new AppError("Profile year is required before browsing", 409);
+  }
+
+  const preferredSkillIds = currentUser.skills_preferences.map(
+    (item) => item.preferred_skill_id
+  );
+  const preferredInterestIds = currentUser.interests_preferences.map(
+    (item) => item.preferred_interest_id
+  );
+
+  if (preferredSkillIds.length === 0 && preferredInterestIds.length === 0) {
+    return [];
+  }
+
+  const currentUserBrowseAttributes = {
     skillIds: currentUser.user_skills.map((item) => item.skill_id),
     interestIds: currentUser.user_interests.map((item) => item.interest_id),
   };
@@ -188,14 +195,16 @@ export async function getDiscoveryProfiles(
     user_id: { not: currentUserId },
     account_status: "active",
     full_name: { not: null },
-    year: { not: null },
+    year: currentUser.year,
     major: { not: null },
-    user_skills: {
-      some: {},
-    },
-    user_interests: {
-      some: {},
-    },
+    OR: [
+      ...(preferredSkillIds.length > 0
+        ? [{ user_skills: { some: { skill_id: { in: preferredSkillIds } } } }]
+        : []),
+      ...(preferredInterestIds.length > 0
+        ? [{ user_interests: { some: { interest_id: { in: preferredInterestIds } } } }]
+        : []),
+    ],
     likes_likes_liked_idTousers: {
       none: {
         liker_id: currentUserId,
@@ -269,6 +278,7 @@ export async function getDiscoveryProfiles(
       },
       user_skills: {
         select: {
+          skill_id: true,
           skills: {
             select: {
               skill: true,
@@ -278,6 +288,7 @@ export async function getDiscoveryProfiles(
       },
       user_interests: {
         select: {
+          interest_id: true,
           interests: {
             select: {
               interest: true,
@@ -298,11 +309,6 @@ export async function getDiscoveryProfiles(
         select: {
           name_: true,
           link: true,
-        },
-      },
-      major_preferences: {
-        select: {
-          preferred_major_id: true,
         },
       },
       skills_preferences: {

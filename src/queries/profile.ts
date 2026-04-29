@@ -323,11 +323,11 @@ export async function profileSetup(input: ProfileSetupInput) {
         }
 
         const alreadyCompleted = Boolean(
-        existingUser.full_name && existingUser.year && existingUser.major
+            existingUser.full_name && existingUser.year && existingUser.major
         );
 
         if (alreadyCompleted) {
-        throw new Error("Profile setup already completed");
+            throw new Error("Profile setup already completed");
         }
 
         const now = new Date();
@@ -577,51 +577,72 @@ export async function getSkillsAndInterests() {
     try {
         const [years, majors, skills, interests] = await prisma.$transaction([
             prisma.years.findMany({
-            select: { year_id: true, year: true },
-            orderBy: { year: "asc" },
+                select: { year_id: true, year: true },
+                orderBy: { year: "asc" },
             }),
             prisma.majors.findMany({
-            select: { major_id: true, majors: true },
-            orderBy: { majors: "asc" },
+                select: { major_id: true, majors: true },
+                orderBy: { majors: "asc" },
             }),
             prisma.skills.findMany({
-            select: {
-                skill_id: true,
-                skill: true,
-                _count: { select: { user_skills: true } },
-            },
-            orderBy: { skill_id: "asc" },
+                select: {
+                    skill_id: true,
+                    skill: true,
+                    _count: {
+                        select: {
+                            user_skills: {
+                                where: {
+                                    users: {
+                                        account_status: account_status_enum.active,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: { skill_id: "asc" },
             }),
             prisma.interests.findMany({
-            select: {
-                interest_id: true,
-                interest: true,
-                _count: { select: { user_interests: true } },
-            },
-            orderBy: { interest_id: "asc" },
+                select: {
+                    interest_id: true,
+                    interest: true,
+                    _count: {
+                        select: {
+                            user_interests: {
+                                where: {
+                                    users: {
+                                        account_status: account_status_enum.active,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: { interest_id: "asc" },
             }),
         ]);
+
         return {
             data: {
-            years: years.map((item) => ({
-                id: item.year_id,
-                name: `Year ${item.year}`,
-                value: item.year,
-            })),
-            majors: majors.map((item) => ({
-                id: item.major_id,
-                name: item.majors,
-            })),
-            skills: skills.map((item) => ({
-                id: item.skill_id,
-                name: item.skill,
-                userCount: item._count.user_skills,
-            })),
-            interests: interests.map((item) => ({
-                id: item.interest_id,
-                name: item.interest,
-                userCount: item._count.user_interests,
-            })),
+                years: years.map((item) => ({
+                    id: item.year_id,
+                    name: `Year ${item.year}`,
+                    value: item.year,
+                })),
+                majors: majors.map((item) => ({
+                    id: item.major_id,
+                    name: item.majors,
+                })),
+                skills: skills.map((item) => ({
+                    id: item.skill_id,
+                    name: item.skill,
+                    userCount: item._count.user_skills,
+                })),
+                interests: interests.map((item) => ({
+                    id: item.interest_id,
+                    name: item.interest,
+                    userCount: item._count.user_interests,
+                })),
             },
         };
     } catch (error) {

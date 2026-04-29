@@ -74,7 +74,7 @@ CREATE TABLE Interests (
 -- full_name, year, major and profile fields are nullable until profile setup completes.
 CREATE TABLE Users (
     user_id                   SERIAL                  PRIMARY KEY,
-    email                     VARCHAR                 NOT NULL UNIQUE
+    email                     VARCHAR                 NOT NULL
     CHECK (email LIKE '%@st.habib.edu.pk'),
     password_hash             VARCHAR                 NOT NULL,
     verified                  BOOLEAN                 NOT NULL DEFAULT FALSE,
@@ -96,6 +96,10 @@ CREATE TABLE Users (
     last_login                TIMESTAMP WITH TIME ZONE,
     created_at                TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX users_email_not_deleted_key
+ON Users (LOWER(email))
+WHERE account_status <> 'deleted';
 
 
 -- ============================================================
@@ -231,12 +235,18 @@ CREATE TABLE Messages (
 -- Restrict is match-scoped: accessed from within an existing match/chat context (FR-18).
 -- Applying a restriction deletes the active match and chat history. Removing the
 -- restriction lets both users encounter each other again through browsing.
--- UNIQUE(blocker_id, blocked_id) prevents duplicate restriction records.
+-- blocked_email preserves the safety boundary across soft-deleted accounts
+-- recreated with the same university email.
+-- UNIQUE(blocker_id, blocked_id) prevents duplicate restriction records for a user id.
+-- UNIQUE(blocker_id, blocked_email) prevents duplicate restriction records for an identity.
 CREATE TABLE Blocked_Users (
-    block_id   SERIAL    PRIMARY KEY,
-    blocker_id INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
-    blocked_id INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
-    UNIQUE (blocker_id, blocked_id)
+    block_id      SERIAL    PRIMARY KEY,
+    blocker_id    INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
+    blocked_id    INTEGER   NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
+    blocked_email VARCHAR   NOT NULL,
+    created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE (blocker_id, blocked_id),
+    UNIQUE (blocker_id, blocked_email)
 );
 
 

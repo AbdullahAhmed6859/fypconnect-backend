@@ -2,37 +2,31 @@ import { prisma } from "../db/prisma";
 import * as bcrypt from "bcrypt";
 import { Prisma } from "../generated/prisma/client";
 import { buildVerificationToken } from "./emailVerification";
+import AppError from "../utils/appError";
 
 export async function signup(email: string, password: string) {
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    throw new AppError("Email and password are required", 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  // console.log("email password are present", email);
   if (!normalizedEmail.endsWith("@st.habib.edu.pk")) {
-    throw new Error("Email must be a valid Habib University email address");
+    throw new AppError("Email must be a valid Habib University email address", 400);
   }
 
   const existingUser = await prisma.users.findFirst({
     where: {
       email: normalizedEmail,
       account_status: { not: "deleted" },
-    }, 
-
+    },
   });
 
-
   if (existingUser) {
-    const err = new Error("An account with this email already exists");
-    (err as any).statusCode = 409;
-    throw err;
+    throw new AppError("An account with this email already exists", 409);
   }
 
-  console.log("email is valid and not in use, proceeding to hash password");
   const hashedPassword = await bcrypt.hash(password, 10);
-
   const { rawToken, hashedToken, expiresAt } = buildVerificationToken();
 
   let newUser;
@@ -54,9 +48,7 @@ export async function signup(email: string, password: string) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      const err = new Error("An account with this email already exists");
-      (err as any).statusCode = 409;
-      throw err;
+      throw new AppError("An account with this email already exists", 409);
     }
 
     throw error;

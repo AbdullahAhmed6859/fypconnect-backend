@@ -14,6 +14,10 @@ import safetyRouter from "./routers/safetyRouter.js";
 import scheduleUnverifiedUserDeletion from "./cronJob/deleteUnverified.js";
 import cookieParser from "cookie-parser";
 import { protect } from "./middleware/auth";
+import {
+  globalErrorHandler,
+  notFoundHandler,
+} from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -39,6 +43,9 @@ app.use("/api/v1/safety", protect, safetyRouter);
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from the typescript server!");
 });
+
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 async function startServer() {
   try {

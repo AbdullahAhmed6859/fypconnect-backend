@@ -320,7 +320,7 @@ export async function profileSetup(input: ProfileSetupInput) {
         });
 
         if (!existingUser) {
-        throw new Error("User not found");
+            throw new AppError("User not found", 404);
         }
 
         const alreadyCompleted = Boolean(
@@ -328,7 +328,7 @@ export async function profileSetup(input: ProfileSetupInput) {
         );
 
         if (alreadyCompleted) {
-            throw new Error("Profile setup already completed");
+            throw new AppError("Profile setup already completed", 409);
         }
 
         const now = new Date();
@@ -641,7 +641,7 @@ export async function getSkillsAndInterests() {
                 })),
             },
         };
-    } catch (error) {
+    } catch {
         throw new AppError("Failed to retrieve profile setup options", 500);
     }
 }

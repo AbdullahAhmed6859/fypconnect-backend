@@ -5,20 +5,16 @@ import {
 import handleResponse from "../utils/handleResponse.js";
 
 export async function getDiscoveryProfilesController(req: any, res: any) {
-  try {
-    const filters = normalizeDiscoveryFilters(
-      Number(req.user.user_id),
-      req.query as Record<string, unknown>
-    );
+  const filters = normalizeDiscoveryFilters(
+    Number(req.user.user_id),
+    req.query as Record<string, unknown>
+  );
 
-    const profiles = await getDiscoveryProfiles(filters);
-    return handleResponse(
-      res,
-      200,
-      "Discovery profiles retrieved successfully",
-      profiles
-    );
-  } catch (error: any) {
-    return handleResponse(res, error.statusCode ?? 400, error.message);
-  }
+  const profiles = await getDiscoveryProfiles(filters);
+  return handleResponse(
+    res,
+    200,
+    "Discovery profiles retrieved successfully",
+    profiles
+  );
 }

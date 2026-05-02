@@ -1,10 +1,10 @@
-// src/queries/login.ts
 import { prisma } from "../db/prisma.js";
 import * as bcrypt from "bcrypt";
+import AppError from "../utils/appError.js";
 
 export async function login(email: string, password: unknown) {
   if (!email || !password || typeof password !== "string") {
-    throw new Error("Email and password are required");
+    throw new AppError("Email and password are required", 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -17,26 +17,27 @@ export async function login(email: string, password: unknown) {
   });
 
   if (!user) {
-  await prisma.auth_logs.create({
-    data: { user_id: null, email_attempted: normalizedEmail, success: false },
-  });
-  throw new Error("Invalid email or password");
-}
-const isMatch = await bcrypt.compare(password, user.password_hash);
-if (!isMatch) {
-  await prisma.auth_logs.create({
-    data: { user_id: user.user_id, email_attempted: normalizedEmail, success: false },
-  });
-  throw new Error("Invalid email or password");
-}
-if (!user.verified) {
-  const err = new Error("Please verify your email before logging in");
-  (err as any).statusCode = 403;
-  throw err;
-}
+    await prisma.auth_logs.create({
+      data: { user_id: null, email_attempted: normalizedEmail, success: false },
+    });
+    throw new AppError("Invalid email or password", 401);
+  }
 
-await prisma.auth_logs.create({
-  data: { user_id: user.user_id, email_attempted: normalizedEmail, success: true },
-});
+  const isMatch = await bcrypt.compare(password, user.password_hash);
+  if (!isMatch) {
+    await prisma.auth_logs.create({
+      data: { user_id: user.user_id, email_attempted: normalizedEmail, success: false },
+    });
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  if (!user.verified) {
+    throw new AppError("Please verify your email before logging in", 403);
+  }
+
+  await prisma.auth_logs.create({
+    data: { user_id: user.user_id, email_attempted: normalizedEmail, success: true },
+  });
+
   return user;
 }

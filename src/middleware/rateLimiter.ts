@@ -33,7 +33,7 @@ class LoginFailureStore implements Store {
 
         existing.count++;
 
-        if (existing.count >= 5 && !existing.isBlocked) {
+        if (existing.count > 5 && !existing.isBlocked) {
         existing.isBlocked = true;
         existing.resetTime = new Date(now + this.BLOCK_DURATION_MS);
         }
@@ -76,13 +76,15 @@ export const createRateLimiter = (options: Partial<Options>) => {
     });
 };
 
+export const loginFailureStore = new LoginFailureStore();
+
 export const loginRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 5,
     skipSuccessfulRequests: true,
     standardHeaders: "draft-8",
     legacyHeaders: false,
-    store: new LoginFailureStore(),
+    store: loginFailureStore,
     keyGenerator: (req) => {
         const email = req.body?.email;
 

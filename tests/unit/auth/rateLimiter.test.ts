@@ -1,4 +1,4 @@
-import { loginRateLimiter } from "../../../src/middleware/rateLimiter";
+import { loginRateLimiter, loginFailureStore } from "../../../src/middleware/rateLimiter";
 
 function createResponse(done: (result: { statusCode?: number; body?: unknown }) => void) {
   return {
@@ -47,6 +47,16 @@ function runLimiter(email: string) {
 }
 
 describe("login lockout", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ legacyFakeTimers: false });
+    jest.setSystemTime(new Date("2026-05-01T00:00:00.000Z"));
+    loginFailureStore.resetAll();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test("locks the sixth failed login attempt", async () => {
     const email = "student@st.habib.edu.pk";
 
@@ -63,5 +73,36 @@ describe("login lockout", () => {
       status: 423,
       error: "Too many failed login attempts. Please try again in 30 minutes.",
     });
+  });
+
+  test("resets failed login attempts after 15 minutes", async () => {
+    const email = "student@st.habib.edu.pk";
+
+    for (let i = 0; i < 5; i++) {
+      const result = await runLimiter(email);
+      expect(result.blocked).toBe(false);
+    }
+
+    jest.advanceTimersByTime(16 * 60 * 1000);
+
+    const nextAttempt = await runLimiter(email);
+    expect(nextAttempt.blocked).toBe(false);
+  });
+
+  test("releases the login lock after 30 minutes", async () => {
+    const email = "student@st.habib.edu.pk";
+
+    for (let i = 0; i < 5; i++) {
+      const result = await runLimiter(email);
+      expect(result.blocked).toBe(false);
+    }
+
+    const sixthAttempt = await runLimiter(email);
+    expect(sixthAttempt.blocked).toBe(true);
+
+    jest.advanceTimersByTime(31 * 60 * 1000);
+
+    const seventhAttempt = await runLimiter(email);
+    expect(seventhAttempt.blocked).toBe(false);
   });
 });

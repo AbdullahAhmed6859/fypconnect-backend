@@ -17,6 +17,7 @@ jest.mock("../../../src/utils/sendVerificationEmail", () => ({
 
 import { prisma } from "../../../src/db/prisma";
 import {
+  buildVerificationToken,
   resendVerificationEmailForUser,
   verifyEmailToken,
 } from "../../../src/queries/emailVerification";
@@ -47,6 +48,61 @@ describe("email verification queries", () => {
       "Verification token has expired",
     );
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  test("accepts a valid verification code exactly at the 24-hour expiry boundary", async () => {
+    const rawToken = "999999";
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    findFirstMock.mockResolvedValue({
+      user_id: 66,
+      email: "student@st.habib.edu.pk",
+      verified: false,
+      verification_token: hashedToken,
+      verification_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    } as never);
+    updateMock.mockResolvedValue({} as never);
+
+    const result = await verifyEmailToken("student@st.habib.edu.pk", rawToken);
+
+    expect(result).toEqual({ alreadyVerified: false });
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { user_id: 66 },
+      data: {
+        verified: true,
+        verification_token: null,
+        verification_expires_at: null,
+        account_status: "active",
+      },
+    });
+  });
+
+  test("rejects a verification code immediately after the 24-hour expiry boundary", async () => {
+    const rawToken = "111111";
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    findFirstMock.mockResolvedValue({
+      user_id: 77,
+      email: "student@st.habib.edu.pk",
+      verified: false,
+      verification_token: hashedToken,
+      verification_expires_at: new Date(Date.now() - 1),
+    } as never);
+
+    await expect(verifyEmailToken("student@st.habib.edu.pk", rawToken)).rejects.toThrow(
+      "Verification token has expired",
+    );
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  test("generates a verification token valid for 24 hours", () => {
+    const before = Date.now();
+    const { rawToken, hashedToken, expiresAt } = buildVerificationToken();
+
+    expect(rawToken).toMatch(/^\d{6}$/);
+    expect(hashedToken).toHaveLength(64);
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + 24 * 60 * 60 * 1000 - 1000);
+    expect(expiresAt.getTime()).toBeLessThanOrEqual(before + 24 * 60 * 60 * 1000 + 1000);
   });
 
   test("enforces the resend-verification rate limit", async () => {

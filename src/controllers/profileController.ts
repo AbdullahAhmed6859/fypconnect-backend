@@ -12,80 +12,46 @@ import { updateMyProfile } from "../queries/profileUpdate.js";
 import handleResponse from "../utils/handleResponse.js";
 
 export const getSkillsAndInterestsController = async (req: any, res: any) => {
-    const userId = req.user.user_id;
-    if (!userId) {
-        return handleResponse(res, 401, "Unauthorized");
-    }
-    try {
-        const data = await getSkillsAndInterests();
-        return handleResponse(res, 200, "Skills and interests retrieved successfully", data);
-    } catch (error: any) {
-        return handleResponse(res, 400, error.message);
-    }
+    const data = await getSkillsAndInterests();
+    return handleResponse(res, 200, "Skills and interests retrieved successfully", data);
 }
 
 export const setupProfile = async (req: any, res: any) => {
-    const ProfileSetupInput: ProfileSetupInput = req.body;
-    ProfileSetupInput.userId = req.user.user_id;
-    
-    try {
-        const profile = await profileSetup(ProfileSetupInput);
-        return handleResponse(res, 200, "Profile setup successful", profile);
-    } catch (error: any) {
-        return handleResponse(res, 400, error.message);
-    }
+    const input: ProfileSetupInput = req.body;
+    input.userId = req.user.user_id;
+
+    const profile = await profileSetup(input);
+    return handleResponse(res, 200, "Profile setup successful", profile);
 }
 
 export const getUserProfile = async (req: any, res: any) => {
     const userId = req.user.user_id;
-
-    try {
-        const profile = await getProfile(userId);
-        return handleResponse(res, 200, "Profile retrieved successfully", profile);
-    } catch (error: any) {
-        return handleResponse(res, 400, error.message);
-    }
+    const profile = await getProfile(userId);
+    return handleResponse(res, 200, "Profile retrieved successfully", profile);
 }
 
 export const getUserPreferences = async (req: any, res: any) => {
     const userId = req.user.user_id;
-
-    try {
-        const preferences = await getPreferences(userId);
-        return handleResponse(res, 200, "Preferences retrieved successfully", preferences);
-    } catch (error: any) {
-        return handleResponse(res, 400, error.message);
-    }
+    const preferences = await getPreferences(userId);
+    return handleResponse(res, 200, "Preferences retrieved successfully", preferences);
 }
 
 export const updateUserPreferences = async (req: any, res: any) => {
-    try {
-        const preferencesInput = normalizePreferencesInput({
-            ...req.body,
-            userId: req.user.user_id,
-        });
+    const preferencesInput = normalizePreferencesInput({
+        ...req.body,
+        userId: req.user.user_id,
+    });
 
-        const preferences = await savePreferences(preferencesInput);
-        return handleResponse(res, 200, "Preferences updated successfully", preferences);
-    } catch (error: any) {
-        return handleResponse(res, error.statusCode ?? 400, error.message);
-    }
+    const preferences = await savePreferences(preferencesInput);
+    return handleResponse(res, 200, "Preferences updated successfully", preferences);
 }
 
 export async function dismissAnnualYearReviewController(req: any, res: any) {
-    try {
-        const result = await dismissAnnualYearReview(Number(req.user.user_id));
-        return handleResponse(res, 200, "Annual year review dismissed", result);
-    } catch (error: any) {
-        return handleResponse(res, error.statusCode ?? 400, error.message);
-    }
+    const result = await dismissAnnualYearReview(Number(req.user.user_id));
+    return handleResponse(res, 200, "Annual year review dismissed", result);
 }
 
 export async function updateMyProfileController(req: any, res: any) {
-    try {
-        const result = await updateMyProfile(Number(req.user.user_id), req.body);
-        return handleResponse(res, 200, "Profile updated successfully", result);
-    } catch (error: any) {
-        return handleResponse(res, error.statusCode ?? 400, error.message);
-    }
+    const result = await updateMyProfile(Number(req.user.user_id), req.body);
+    return handleResponse(res, 200, "Profile updated successfully", result);
 }

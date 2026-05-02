@@ -1,6 +1,7 @@
 import { prisma } from "../db/prisma";
 import crypto from "crypto";
 import { sendVerificationEmail } from "../utils/sendVerificationEmail";
+import AppError from "../utils/appError";
 
 export function buildVerificationToken() {
   const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
@@ -14,7 +15,7 @@ export function buildVerificationToken() {
 
 export async function verifyEmailToken(email: string, token: string) {
   if (!email || !token) {
-    throw new Error("Email and verification token are required");
+    throw new AppError("Email and verification token are required", 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -27,26 +28,26 @@ export async function verifyEmailToken(email: string, token: string) {
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new AppError("User not found", 404);
   }
 
   if (user.verified) {
     return { alreadyVerified: true };
   }
+
   if (
     !user.verification_expires_at ||
     user.verification_expires_at < new Date()
   ) {
-    throw new Error("Verification token has expired");
+    throw new AppError("Verification token has expired", 400);
   }
 
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   if (user.verification_token !== hashedToken) {
-    const err = new Error("Invalid verification code");
-    (err as any).statusCode = 400;
-    throw err;
+    throw new AppError("Invalid verification code", 400);
   }
+
   await prisma.users.update({
     where: { user_id: user.user_id },
     data: {
@@ -62,7 +63,7 @@ export async function verifyEmailToken(email: string, token: string) {
 
 export async function resendVerificationEmailForUser(email: string) {
   if (!email) {
-    throw new Error("Email is required");
+    throw new AppError("Email is required", 400);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -75,13 +76,11 @@ export async function resendVerificationEmailForUser(email: string) {
   });
 
   if (!user) {
-    const err = new Error("User not found");
-    (err as any).statusCode = 404;
-    throw err;
+    throw new AppError("User not found", 404);
   }
 
   if (user.verified) {
-    throw new Error("Email is already verified");
+    throw new AppError("Email is already verified", 400);
   }
 
   const now = new Date();
@@ -94,10 +93,11 @@ export async function resendVerificationEmailForUser(email: string) {
   }
 
   if (resendCount >= 3) {
-  const err = new Error("Verification email resend limit exceeded. Try again later.");
-  (err as any).statusCode = 429;
-  throw err;
-}
+    throw new AppError(
+      "Verification email resend limit exceeded. Try again later.",
+      429,
+    );
+  }
 
   const { rawToken, hashedToken, expiresAt } = buildVerificationToken();
 

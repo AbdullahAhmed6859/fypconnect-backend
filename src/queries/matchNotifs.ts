@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import AppError from "../utils/appError.js";
 
 type UpdatedProfileResult = {
     matchId: number;
@@ -20,8 +21,6 @@ type UpdatedProfileResult = {
     indicatorCleared: boolean;
 };
 
-type AppError = Error & { statusCode?: number };
-
 export async function getUpdatedProfileForMatch(
     currentUserId: number,
     matchId: number
@@ -37,15 +36,11 @@ export async function getUpdatedProfileForMatch(
         });
 
         if (!match) {
-            const error: AppError = new Error("Match not found");
-            error.statusCode = 404;
-            throw error;
+            throw new AppError("Match not found", 404);
         }
 
         if (match.user1_id !== currentUserId && match.user2_id !== currentUserId) {
-            const error: AppError = new Error("User is not a participant in this match");
-            error.statusCode = 403;
-            throw error;
+            throw new AppError("User is not a participant in this match", 403);
         }
 
         const updatedUserId = match.user1_id === currentUserId ? match.user2_id : match.user1_id;
@@ -101,9 +96,7 @@ export async function getUpdatedProfileForMatch(
         });
 
         if (!user) {
-            const error: AppError = new Error("Matched user not found");
-            error.statusCode = 404;
-            throw error;
+            throw new AppError("Matched user not found", 404);
         }
 
         const cleared = await tx.notifications.updateMany({
